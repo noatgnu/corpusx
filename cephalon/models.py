@@ -18,7 +18,7 @@ class Project(models.Model):
     description = models.TextField(blank=True, null=True)
     hash = models.TextField(blank=True, null=True)
     metadata = models.JSONField(blank=True, null=True)
-    global_id = models.TextField(unique=True, db_index=True)
+    global_id = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     temporary = models.BooleanField(default=False)
@@ -149,6 +149,7 @@ class APIKey(models.Model):
     access_topics = models.ManyToManyField("Topic", blank=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="api_keys", blank=True, null=True)
     project = models.ManyToManyField(Project, blank=True)
+    pyres = models.ManyToManyField("Pyre", blank=True)
 
     class Meta:
         ordering = ["id"]
@@ -245,6 +246,16 @@ class Topic(models.Model):
 
     def __repr__(self):
         return f"{self.name} {self.created_at}"
+
+class Pyre(models.Model):
+    """
+    A model to store the name of the websocket interchange that can be used to connect to this server
+    """
+    name = models.TextField(unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)

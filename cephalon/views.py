@@ -1,6 +1,6 @@
 import json
 import re
-from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
+from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank, SearchHeadline
 from django.core.files.base import ContentFile
 from django.http import HttpResponse, StreamingHttpResponse
 from ninja import NinjaAPI, Form, Swagger, File
@@ -133,12 +133,12 @@ def complete_chunked_upload(request, upload_id: str, body: ChunkedUploadComplete
 
             content = f.read()
             content = re.split(r"[\s\n\t]", content)
-            # segment file content into chunks ensure that the segment won't cut off a word by 500*500 words
-            for i in range(0, len(content), 500 * 500):
-                if i + 500 * 500 > len(content):
+            # segment file content into chunks ensure that the segment won't cut off a word by 200*200 words
+            for i in range(0, len(content), 200 * 200):
+                if i + 200 * 200 > len(content):
                     ProjectFileContent.objects.create(project_file=file, data=" ".join(content[i:]))
                 else:
-                    ProjectFileContent.objects.create(project_file=file, data=" ".join(content[i:i + 500 * 500]))
+                    ProjectFileContent.objects.create(project_file=file, data=" ".join(content[i:i + 200 * 200]))
             file.load_file_content = True
             file.save()
     if body.delete:
@@ -166,12 +166,24 @@ def download_file(request, file_id: int):
     response["X-Accel-Redirect"] = f"/media/{file.file.name}"
     return response
 
-@api.get("/search/{query}", response=list[ProjectSchema], auth=[AuthApiKey(), AuthApiKeyHeader(), AuthBearer()])
-def search(request, query: str):
+@api.get("/search/project/{query}", response=list[ProjectSchema], auth=[AuthApiKey(), AuthApiKeyHeader(), AuthBearer()])
+def search_project(request, query: str):
     #vector = SearchVector("name", "description", "metadata", "files__name", weight="B") + SearchVector("files__description", "files__content__data", weight="A")
     #query = SearchQuery(query)
     # return Project.objects.annotate(rank=SearchRank(vector, query)).order_by("-rank")
     #vector = SearchVector("name", "description", "metadata", "files__name", weight="B") + SearchVector(
     #    "files__description", "files__content__data", weight="A")
     #Project.objects.filter(files__content__data__search="test")
-    return Project.objects.filter(files__content__data__search=query).distinct()
+    q = SearchQuery(query, search_type="phrase")
+    v = SearchVector("files__content__data")
+    headline = SearchHeadline("files__content__data", q, start_sel="<b>", stop_sel="</b>")
+
+    return Project.objects.annotate(headline=headline, search=v).filter(search=q)
+
+@api.get("/search/file/{query}", response=list[FileSchema], auth=[AuthApiKey(), AuthApiKeyHeader(), AuthBearer()])
+@paginate
+def search_file(request, query: str):
+    q = SearchQuery(query, search_type="phrase")
+    v = SearchVector("content__data")
+    headline = SearchHeadline("content__data", q, start_sel="<b>", stop_sel="</b>")
+    return ProjectFile.objects.annotate(headline=headline, search=v).filter(search=q)

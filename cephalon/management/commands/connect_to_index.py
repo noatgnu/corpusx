@@ -1,11 +1,15 @@
 import json
-import os
 
 import httpx
+from channels.db import database_sync_to_async
+from django.contrib.postgres.search import SearchVector, SearchHeadline, SearchQuery
 from django.core.management.base import BaseCommand
-from websockets.sync.client import connect
+import websockets
 
 from cephalon.models import Project, ProjectFile
+import asyncio
+
+from cephalon.schemas import FileSchema
 
 
 class RemoteCorpusX:
@@ -44,11 +48,64 @@ class RemoteCorpusX:
                 if not chunk:
                     break
 
+class CurrentCorpusX:
+    @database_sync_to_async
+    def search(self, term: str):
+        query = SearchQuery(term, search_type="phrase")
+        files = ProjectFile.objects.annotate(
+            search=SearchVector('content__data'),
+            headline=SearchHeadline("content__data",
+                                    query,
+                                    start_sel="<b>", stop_sel="</b>")
+        ).filter(search=query)
 
+        return [FileSchema.from_orm(i).dict() for i in files]
+
+corpusx_dict = {
+    "send": RemoteCorpusX("http://localhost:8000", "test"),
+    "receive": RemoteCorpusX("http://localhost:8001", "test")
+}
 class Command(BaseCommand):
     """
     A command to open a websocket connection to the index server.
     """
+
+
+    async def connect_to_server(self, options, channel_type="initial"):
+        async for websocket in websockets.connect(f"ws://{options['host']}:{options['port']}/ws/{channel_type}/{options['interchange']}/{options['server_id']}/", extra_headers={
+            "Origin": f"http://{options['host']}:{options['port']}", "X-API-Key": options['api_key']
+        }):
+            current = CurrentCorpusX()
+            try:
+                async for message in websocket:
+                    message = json.loads(message)
+                    if message["message"].startswith("welcome"):
+                        corpusx_dict[channel_type] = RemoteCorpusX(f"http://{options['host']}:{options['port']}", options['api_key'])
+                        await websocket.send(json.dumps({
+                            "message": "hello",
+                            "requestType": "hello",
+                            "senderID": options["server_id"],
+                            "targetID": "host"
+                        }))
+
+                    if channel_type=="search":
+                        test_p = await current.search("lrrk2")
+                        await websocket.send(json.dumps({
+                            "message": test_p,
+                            "requestType": "search",
+                            "senderID": options["server_id"],
+                            "targetID": "host"
+                        }))
+                        if message["targetID"] == options["server_id"]:
+                            if message["requestType"] == "search":
+                                current.search(message["message"])
+
+                    print(message)
+            except websockets.ConnectionClosed:
+                continue
+    async def connect(self, options):
+        await asyncio.gather(self.connect_to_server(options, channel_type="initial"), self.connect_to_server(options, channel_type="search"))
+
     def add_arguments(self, parser):
         parser.add_argument('host', type=str, help='Host of the index server')
         parser.add_argument('port', type=str, help='Port of the index server')
@@ -57,16 +114,6 @@ class Command(BaseCommand):
         parser.add_argument('api_key', type=str, help='API key of the index server')
 
     def handle(self, *args, **options):
-        with connect(f"ws://{options['host']}:{options['port']}/ws/interchange/{options['interchange']}/{options['server_id']}/", additional_headers={
-            "Origin": f"http://{options['host']}:{options['port']}",
-        }) as websocket:
-            while True:
-                message = input("Enter message: ")
-                websocket.send(json.dumps({
-                    "message": message,
-                    "requestType": "test",
-                    "senderID": options['server_id']
-                }))
-                result = websocket.recv()
-                data = json.loads(result)
-                print(data['message'])
+        loop = asyncio.get_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(self.connect(options))

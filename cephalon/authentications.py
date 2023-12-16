@@ -3,7 +3,6 @@ from ninja.security import HttpBearer, APIKeyQuery, APIKeyHeader
 from cephalon.models import Token, APIKey
 from cephalon.utils import Sha512ApiKeyHasher
 
-
 class AuthBearer(HttpBearer):
     def authenticate(self, request, token):
         try:
@@ -34,3 +33,5 @@ class AuthApiKeyHeader(APIKeyHeader):
             return APIKey.objects.get(key=hashed_key)
         except APIKey.DoesNotExist:
             pass
+
+

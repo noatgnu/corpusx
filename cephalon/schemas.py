@@ -17,6 +17,7 @@ class ProjectSchema(Schema):
     hash: str
     metadata: dict
     global_id: str
+    headline: Optional[str] = None
 
 class ProjectPostSchema(Schema):
     name: str
@@ -35,6 +36,8 @@ class FileSchema(Schema):
     file: str
     file_category: str
     path: Optional[list[str]] = []
+    headline: Optional[str] = None
+    project_id: Optional[int] = None
 
 class FilePostSchema(Schema):
     description: str

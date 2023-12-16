@@ -34,6 +34,8 @@ if os.environ.get("DEBUG", "True") == "False":
 # Application definition
 
 INSTALLED_APPS = [
+    'cephalon',
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -43,8 +45,7 @@ INSTALLED_APPS = [
     "whitenoise.runserver_nostatic",
     'django.contrib.staticfiles',
     'corsheaders',
-    'cephalon',
-    'channels'
+
 ]
 
 MIDDLEWARE = [

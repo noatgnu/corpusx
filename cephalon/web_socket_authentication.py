@@ -28,5 +28,4 @@ class WebsocketInterchangeAPIKeyAuthenticationMiddleware:
                 api_key = await get_APIKey(api_key)
                 scope["api_key"] = api_key
                 break
-        print(scope)
         return await self.app(scope, receive, send)

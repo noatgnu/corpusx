@@ -1,5 +1,7 @@
 import json
 import re
+import uuid
+
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank, SearchHeadline
 from django.core.files.base import ContentFile
 from django.http import HttpResponse, StreamingHttpResponse
@@ -9,7 +11,7 @@ from ninja.files import UploadedFile
 from ninja.pagination import paginate
 import hashlib
 from cephalon.authentications import AuthBearer, AuthApiKey, AuthApiKeyHeader
-from cephalon.models import Project, ProjectFile, ChunkedUpload, ProjectFileContent
+from cephalon.models import Project, ProjectFile, ChunkedUpload, ProjectFileContent, WebsocketSession
 from cephalon.schemas import ProjectSchema, ProjectPostSchema, FileSchema, FilePostSchema, ChunkedUploadSchema, \
     HashErrorSchema, ChunkedUploadInitSchema, ChunkedUploadCompleteSchema, BadRequestSchema
 
@@ -187,3 +189,14 @@ def search_file(request, query: str):
     v = SearchVector("content__data")
     headline = SearchHeadline("content__data", q, start_sel="<b>", stop_sel="</b>")
     return ProjectFile.objects.annotate(headline=headline, search=v).filter(search=q)
+
+@api.get("/websockets/session_id", response=str)
+def websocket_session_id(request):
+    user = request.user
+    if user.is_authenticated:
+        ws = WebsocketSession.objects.get(user=user)
+        if ws.DoesNotExist:
+            ws = WebsocketSession.objects.create(user=user)
+        return ws.session_id
+    else:
+        return str(uuid.uuid4())

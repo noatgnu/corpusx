@@ -255,6 +255,26 @@ class Pyre(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+class WebsocketSession(models.Model):
+    """
+    A model to store and associate websocket sessions with users
+    """
+    session_id = models.UUIDField(unique=True, db_index=True, default=uuid.uuid4)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="websocket_sessions", blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    closed = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["id"]
+        app_label = "cephalon"
+
+    def __str__(self):
+        return f"{self.session_id} {self.user} {self.created_at} {self.closed}"
+
+    def __repr__(self):
+        return f"{self.session_id} {self.user} {self.created_at} {self.closed}"
+
 
 
 

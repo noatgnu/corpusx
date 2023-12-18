@@ -264,6 +264,7 @@ class WebsocketSession(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     closed = models.BooleanField(default=True)
+    files = models.ManyToManyField(ProjectFile, blank=True)
 
     class Meta:
         ordering = ["id"]

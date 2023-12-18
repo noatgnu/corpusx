@@ -1,65 +1,13 @@
 import json
 
-import httpx
-from channels.db import database_sync_to_async
-from django.contrib.postgres.search import SearchVector, SearchHeadline, SearchQuery
 from django.core.management.base import BaseCommand
 import websockets
 
-from cephalon.models import Project, ProjectFile
 import asyncio
 
+from cephalon.models import ProjectFile
 from cephalon.schemas import FileSchema
-
-
-class RemoteCorpusX:
-    def __init__(self, url: str, api_key: str):
-        self.url = url
-        self.api_key = api_key
-        self.client = httpx.Client(headers={"X-API-Key": f"{self.api_key}"})
-
-    def create_project(self, project: Project):
-        project = self.client.post(f"{self.url}/api/projects")
-        return project
-
-    def update_project(self, project: Project):
-        project = self.client.patch(f"{self.url}/api/projects/{project.id}", json=project)
-        return project
-
-    def get_project(self, project_id: int):
-        project = self.client.get(f"{self.url}/api/projects/{project_id}")
-        return project
-
-    def list_projects(self):
-        projects = self.client.get(f"{self.url}/api/projects")
-        return projects
-
-    def upload_chunked_file(self, file: ProjectFile, project: Project):
-        d = self.client.post(f"{self.url}/api/files/chunked", json={
-                        "filename": file.name,
-                        "size": file.file.size,
-                        "data_hash": file.hash,
-                        "file_category": file.file_category
-                    })
-        d = d.json()
-        with open(file.file.path, "rb") as f:
-            while True:
-                chunk = f.read(d.json()["chunk_size"])
-                if not chunk:
-                    break
-
-class CurrentCorpusX:
-    @database_sync_to_async
-    def search(self, term: str):
-        query = SearchQuery(term, search_type="phrase")
-        files = ProjectFile.objects.annotate(
-            search=SearchVector('content__data'),
-            headline=SearchHeadline("content__data",
-                                    query,
-                                    start_sel="<b>", stop_sel="</b>")
-        ).filter(search=query)
-
-        return [FileSchema.from_orm(i).dict() for i in files]
+from corpusx.consumers import CurrentCorpusX, RemoteCorpusX
 
 corpusx_dict = {
     "send": RemoteCorpusX("http://localhost:8000", "test"),
@@ -79,32 +27,43 @@ class Command(BaseCommand):
             try:
                 async for message in websocket:
                     message = json.loads(message)
+                    print(message)
                     if message["message"].startswith("welcome"):
                         corpusx_dict[channel_type] = RemoteCorpusX(f"http://{options['host']}:{options['port']}", options['api_key'])
-                        await websocket.send(json.dumps({
-                            "message": "hello",
-                            "requestType": "hello",
-                            "senderID": options["server_id"],
-                            "targetID": "host"
-                        }))
 
                     if channel_type=="search":
-                        test_p = await current.search("lrrk2")
-                        await websocket.send(json.dumps({
-                            "message": test_p,
-                            "requestType": "search",
-                            "senderID": options["server_id"],
-                            "targetID": "host"
-                        }))
                         if message["targetID"] == options["server_id"]:
-                            if message["requestType"] == "search":
-                                current.search(message["message"])
+                            test_p = await current.search(message["data"]["term"], message["data"]["description"])
+                            await websocket.send(json.dumps({
+                                "message": "Results found",
+                                "requestType": "search-result",
+                                "senderID": options["server_id"],
+                                "targetID": "host",
+                                "channelType": channel_type,
+                                "sessionID": message["sessionID"],
+                                "data": test_p,
+                                "clientID": message["clientID"]
+                            }))
+                    elif channel_type=="file_request":
+                        if message["targetID"] == options["server_id"]:
+                            old_file = await ProjectFile.objects.aget(id=message["data"]["id"])
+                            remote = RemoteCorpusX(f"http://{options['host']}:{options['port']}", options['api_key'])
+                            file = await remote.upload_chunked_file(old_file)
+                            await websocket.send(json.dumps({
+                                "message": "File uploaded",
+                                "requestType": "file-upload",
+                                "senderID": options["server_id"],
+                                "targetID": "host",
+                                "channelType": channel_type,
+                                "sessionID": message["sessionID"],
+                                "data": [FileSchema.from_orm(old_file).dict(), file],
+                                "clientID": message["clientID"]
+                            }))
 
-                    print(message)
             except websockets.ConnectionClosed:
                 continue
     async def connect(self, options):
-        await asyncio.gather(self.connect_to_server(options, channel_type="initial"), self.connect_to_server(options, channel_type="search"))
+        await asyncio.gather(self.connect_to_server(options, channel_type="initial"), self.connect_to_server(options, channel_type="search"), self.connect_to_server(options, channel_type="file_request"))
 
     def add_arguments(self, parser):
         parser.add_argument('host', type=str, help='Host of the index server')

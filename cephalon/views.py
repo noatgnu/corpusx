@@ -123,13 +123,23 @@ def upload_chunk(request, upload_id: str, offset: int = Form(...), chunk: Upload
 def complete_chunked_upload(request, upload_id: str, body: ChunkedUploadCompleteSchema):
     chunked_upload = ChunkedUpload.objects.get(upload_id=upload_id)
     file = None
-    project = Project.objects.get(id=body.project_id)
+    project = None
+    if body.project_id:
+        project = Project.objects.get(id=body.project_id)
     if body.file_id:
         file = ProjectFile.objects.get(id=body.file_id)
         file.file = chunked_upload.file
         file.save()
     if body.create_file:
-        file = ProjectFile.objects.create(file=ContentFile(chunked_upload.file.read(), name=chunked_upload.filename), hash=chunked_upload.hash, name=chunked_upload.filename, file_category=chunked_upload.file_category, project=project, path=body.path)
+        file = ProjectFile.objects.create(file=ContentFile(chunked_upload.file.read(),
+                                                           name=chunked_upload.filename),
+                                          hash=chunked_upload.hash,
+                                          name=chunked_upload.filename,
+                                          file_category=chunked_upload.file_category,
+                                          path=body.path)
+        if body.project_id:
+            file.project = project
+            file.save()
     if (body.file_id or body.create_file) and body.load_file_content:
         with open(file.file.path, "rt") as f:
 
@@ -168,6 +178,19 @@ def download_file(request, file_id: int):
     response["X-Accel-Redirect"] = f"/media/{file.file.name}"
     return response
 
+@api.get("/files/{file_id}/session/{session_id}/download")
+def download_sessional_file(request, file_id: int, session_id: str):
+    file = ProjectFile.objects.get(id=file_id)
+    session = WebsocketSession.objects.get(session_id=session_id)
+
+    if file in session.files.all():
+        response = HttpResponse(status=200)
+        response["Content-Disposition"] = f"attachment; filename={file.name}"
+        response["X-Accel-Redirect"] = f"/media/{file.file.name}"
+        return response
+    else:
+        return HttpResponse(status=403)
+
 @api.get("/search/project/{query}", response=list[ProjectSchema], auth=[AuthApiKey(), AuthApiKeyHeader(), AuthBearer()])
 def search_project(request, query: str):
     #vector = SearchVector("name", "description", "metadata", "files__name", weight="B") + SearchVector("files__description", "files__content__data", weight="A")
@@ -197,6 +220,6 @@ def websocket_session_id(request):
         ws = WebsocketSession.objects.get(user=user)
         if ws.DoesNotExist:
             ws = WebsocketSession.objects.create(user=user)
-        return ws.session_id
+        return str(ws.session_id)
     else:
-        return str(uuid.uuid4())
+        return str(WebsocketSession.objects.create().session_id)

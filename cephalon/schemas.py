@@ -70,5 +70,5 @@ class ChunkedUploadCompleteSchema(Schema):
     delete: Optional[bool] = False
     create_file: Optional[bool] = False
     load_file_content: Optional[bool] = False
-    project_id: int = None
+    project_id: Optional[int] = None
     path: Optional[tuple[str, ...]] = []

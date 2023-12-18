@@ -9,12 +9,11 @@ import jwt
 from django.utils.crypto import constant_time_compare
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
-import httpx
+
 
 class Sha512ApiKeyHasher(BasePasswordHasher):
     """
@@ -151,4 +150,5 @@ def decrypt_AESGCM(ciphertext: bytes, nonce: bytes, key: bytes):
     aesgcm = AESGCM(key)
     plaintext = aesgcm.decrypt(nonce, ciphertext, None)
     return plaintext
+
 

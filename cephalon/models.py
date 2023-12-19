@@ -150,6 +150,7 @@ class APIKey(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="api_keys", blank=True, null=True)
     project = models.ManyToManyField(Project, blank=True)
     pyres = models.ManyToManyField("Pyre", blank=True)
+    remote_pair = models.OneToOneField("APIKeyRemote", on_delete=models.CASCADE, related_name="local_pair", blank=True, null=True)
 
     class Meta:
         ordering = ["id"]

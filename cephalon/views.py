@@ -223,3 +223,9 @@ def websocket_session_id(request):
         return str(ws.session_id)
     else:
         return str(WebsocketSession.objects.create().session_id)
+
+@api.post("/receive_key", auth=[AuthApiKey(), AuthApiKeyHeader()])
+def receive_key(request, key: str = Form(...)):
+    request.auth.key.receive_key(key)
+    request.auth.key.save()
+    return HttpResponse(status=200)

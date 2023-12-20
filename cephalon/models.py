@@ -171,6 +171,13 @@ class APIKey(models.Model):
         self.save()
         return key[1]
 
+    def receive_remote_api_key(self, key: str):
+        encrypted_key = create_signed_token({"key": key}, settings.SECRET_KEY)
+        self.remote_pair = APIKeyRemote.objects.create(key=encrypted_key, hostname="localhost", protocol="http", port=8000)
+
+    def decrypt_remote_api_key(self):
+        return decode_signed_token(self.remote_pair.key, settings.SECRET_KEY)["key"]
+
 class APIKeyRemote(models.Model):
     """
     A model to store API keys generated for this instance to communicate to other instances

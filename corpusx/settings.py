@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.postgres',
     "whitenoise.runserver_nostatic",
     'django.contrib.staticfiles',
+    'django_json_widget',
     'corsheaders',
     'cephalon',
     'channels',

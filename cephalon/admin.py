@@ -1,5 +1,7 @@
 from django.contrib import admin
+from django_json_widget.widgets import JSONEditorWidget
 
+from django.db import models
 from cephalon.models import APIKey, Project, ProjectFile, Pyre, WebsocketNode, Topic
 
 
@@ -11,11 +13,17 @@ class APIKeyAdmin(admin.ModelAdmin):
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
     list_display = ("name", "description", "hash", "global_id")
+    formfield_overrides = {
+        models.JSONField: {'widget': JSONEditorWidget},
+    }
 
 @admin.register(ProjectFile)
 class ProjectFileAdmin(admin.ModelAdmin):
     list_display = ("name", "description", "hash", "file_type", "file", "file_category", "path")
     fields = ("name", "description", "file_type", "file_category", "file", "project", 'load_file_content')
+    formfield_overrides = {
+        models.JSONField: {'widget': JSONEditorWidget},
+    }
 
     def save_model(self, request, obj, form, change):
         if 'file' in form.changed_data:

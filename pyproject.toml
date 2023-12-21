@@ -23,6 +23,7 @@ gunicorn = "^21.2.0"
 channels = "^4.0.0"
 channels-redis = {extras = ["cryptography"], version = "^4.1.0"}
 websockets = "^12.0"
+django-json-widget = {git = "https://github.com/jmrivas86/django-json-widget.git", rev="32c6acf9dd3cf27b43e0dd38a01e2af8e6c2ae10"}
 
 
 [build-system]

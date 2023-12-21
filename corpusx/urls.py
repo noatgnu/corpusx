@@ -19,9 +19,9 @@ from django.urls import path
 
 from cephalon.views import api
 
-admin.site.site_header = "CorpusX Admin"
-admin.site.site_title = "CorpusX Admin Portal"
-admin.site.index_title = "Welcome to CorpusX Data Management Research Portal"
+admin.site.site_header = "Cinder Admin"
+admin.site.site_title = "Cinder Admin Portal"
+admin.site.index_title = "Welcome to Cinder Data Management Research Portal"
 
 urlpatterns = [
     path('api/', api.urls),

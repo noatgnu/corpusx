@@ -1,0 +1,9 @@
+{% extends "admin/base.html" %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+{% block extrastyle %}
+    <link rel="stylesheet" type="text/css" href="{% static "admin/css/admin_color.css" %}"/>
+{% endblock %}
+
+{% block branding %}{% endblock %}
+{% block nav-global %}{% endblock %}

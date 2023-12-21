@@ -1,5 +1,6 @@
 import json
 
+import httpx
 from django.core.management.base import BaseCommand
 import websockets
 
@@ -73,6 +74,12 @@ class Command(BaseCommand):
         parser.add_argument('api_key', type=str, help='API key of the index server')
 
     def handle(self, *args, **options):
-        loop = asyncio.get_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(self.connect(options))
+        with httpx.Client(headers={"X-API-Key": options['api_key']}) as client:
+            print(f"http://{options['host']}:{options['port']}/api/register_node")
+            res = client.post(f"http://{options['host']}:{options['port']}/api/register_node", data={"node_name": options['server_id']})
+            if res.status_code == 200:
+                loop = asyncio.get_event_loop()
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(self.connect(options))
+            else:
+                print("Error registering node")

@@ -1,3 +1,4 @@
+import re
 import uuid
 
 from django.contrib.auth.models import User
@@ -7,7 +8,7 @@ from django.dispatch import receiver
 
 from cephalon.utils import create_signed_token, decode_signed_token, create_api_key, verify_api_key
 from django.conf import settings
-
+import hashlib
 
 # Create your models here.
 class Project(models.Model):
@@ -34,6 +35,18 @@ class Project(models.Model):
 
     def __repr__(self):
         return f"{self.name} {self.created_at}"
+
+    def calculate_project_hash(self):
+        hasher = hashlib.sha1()
+        for file in self.files.all():
+            with open(file.file.path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hasher.update(chunk)
+        return hasher.hexdigest()
+
+    def update_project_hash(self):
+        self.hash = self.calculate_project_hash()
+        self.save()
 
 
 class ProjectFile(models.Model):
@@ -74,6 +87,39 @@ class ProjectFile(models.Model):
     def delete(self, using=None, keep_parents=False):
         self.file.delete()
         super().delete(using=using, keep_parents=keep_parents)
+
+    def save(self, *args, **kwargs):
+        # calculate sha1 hash of file
+        return super().save(*args, **kwargs)
+
+    def save_altered(self, *args, **kwargs):
+        # calculate sha1 hash of file
+        if self.file:
+            hasher = hashlib.sha1()
+            with open(self.file.path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hasher.update(chunk)
+            hash = hasher.hexdigest()
+            if hash != self.hash:
+                self.hash = hash
+                if self.load_file_content:
+                    self.load_file()
+
+        return super().save(*args, **kwargs)
+
+    def load_file(self):
+        with open(self.file.path, "rt") as f:
+            content = f.read()
+            content = re.split(r"[\s\n\t]", content)
+            # segment file content into chunks ensure that the segment won't cut off a word by 200*200 words
+            for i in range(0, len(content), 200 * 200):
+                if i + 200 * 200 > len(content):
+                    ProjectFileContent.objects.create(project_file=self, data=" ".join(content[i:]))
+                else:
+                    ProjectFileContent.objects.create(project_file=self, data=" ".join(content[i:i + 200 * 200]))
+
+    def remove_file_content(self):
+        self.content.all().delete()
 
 class ProjectFileContent(models.Model):
     """
@@ -262,6 +308,39 @@ class Pyre(models.Model):
     name = models.TextField(unique=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    file_request_channel_connected_nodes = models.ManyToManyField("WebsocketNode", related_name="file_request_channel", blank=True)
+    result_request_channel_connected_nodes = models.ManyToManyField("WebsocketNode", related_name="result_request_channel", blank=True)
+    interserver_channel_connected_nodes = models.ManyToManyField("WebsocketNode", related_name="interserver_channel", blank=True)
+    search_data_channel_connected_nodes = models.ManyToManyField("WebsocketNode", related_name="search_data_channel", blank=True)
+
+    class Meta:
+        ordering = ["id"]
+        app_label = "cephalon"
+
+    def __str__(self):
+        return f"{self.name} {self.created_at}"
+
+    def __repr__(self):
+        return f"{self.name} {self.created_at}"
+
+class WebsocketNode(models.Model):
+    """
+    A model to store the websocket node that is connected to this server
+    """
+    name = models.TextField(unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True),
+    api_key = models.ForeignKey(APIKey, on_delete=models.CASCADE, related_name="websocket_nodes", blank=True, null=True)
+
+    class Meta:
+        ordering = ["id"]
+        app_label = "cephalon"
+
+    def __str__(self):
+        return f"{self.name} {self.created_at}"
+
+    def __repr__(self):
+        return f"{self.name} {self.created_at}"
 
 class WebsocketSession(models.Model):
     """

@@ -7,7 +7,7 @@ from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer, AsyncJsonWebsocketConsumer
 from django.contrib.postgres.search import SearchQuery, SearchHeadline, SearchVector
 
-from cephalon.models import ProjectFile, Project, WebsocketSession
+from cephalon.models import ProjectFile, Project, WebsocketSession, Pyre, WebsocketNode
 from cephalon.schemas import FileSchema
 
 
@@ -15,32 +15,40 @@ class RemoteFileConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.interchange = self.scope['url_route']['kwargs']['interchange']
         self.server_id = self.scope['url_route']['kwargs']['server_id']
-        await self.channel_layer.group_add(self.interchange+"_file_request", self.channel_name)
+        self.current = CurrentCorpusX()
+        await self.current.add_node_to_pyre(self.interchange, self.server_id, "file_request")
+        await self.channel_layer.group_add(self.interchange+self.server_id+"_file_request", self.channel_name)
         await self.accept()
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(self.interchange+"_file_request", self.channel_name)
+        await self.current.remove_node_from_pyre(self.interchange, self.server_id, "file_request")
+        await self.channel_layer.group_discard(self.interchange+self.server_id+"_file_request", self.channel_name)
         pass
 
     async def receive(self, text_data, **kwargs):
         data = json.loads(text_data)
+        self.current = CurrentCorpusX()
+        nodes = await self.current.get_associated_nodes(self.interchange, "file_request")
+
         if data["requestType"] == "user-file-request":
-            await self.channel_layer.group_send(
-                self.interchange+"_file",
-                {
-                    'type': 'communication_message',
-                    'message': {
-                        'message': data['message'],
-                        'requestType': data['requestType'],
-                        'senderID': data['senderID'],
-                        'targetID': data['targetID'],
-                        'channelType': "file",
-                        'data': data['data'],
-                        'clientID': data["clientID"],
-                        'sessionID': data["sessionID"]
-                    }
-                }
-            )
+            if nodes:
+                for n in nodes:
+                    await self.channel_layer.group_send(
+                        self.interchange+n.name+"_file",
+                        {
+                            'type': 'communication_message',
+                            'message': {
+                                'message': data['message'],
+                                'requestType': data['requestType'],
+                                'senderID': data['senderID'],
+                                'targetID': data['targetID'],
+                                'channelType': "file",
+                                'data': data['data'],
+                                'clientID': data["clientID"],
+                                'sessionID': data["sessionID"]
+                            }
+                        }
+                    )
         elif data["requestType"] == "file-upload":
             if data["data"]:
                 current = CurrentCorpusX()
@@ -80,11 +88,14 @@ class RemoteResultConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.interchange = self.scope['url_route']['kwargs']['interchange']
         self.server_id = self.scope['url_route']['kwargs']['server_id']
-        await self.channel_layer.group_add(self.interchange+"_result", self.channel_name)
+        self.current = CurrentCorpusX()
+        await self.current.add_node_to_pyre(self.interchange, self.server_id, "result")
+        await self.channel_layer.group_add(self.interchange+self.server_id+"_result", self.channel_name)
         await self.accept()
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(self.interchange+"_result", self.channel_name)
+        await self.current.remove_node_from_pyre(self.interchange, self.server_id, "result")
+        await self.channel_layer.group_discard(self.interchange+self.server_id+"_result", self.channel_name)
         pass
 
     async def receive(self, text_data, **kwargs):
@@ -108,18 +119,21 @@ class InterServerCommunicationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.interchange = self.scope['url_route']['kwargs']['interchange']
         self.server_id = self.scope['url_route']['kwargs']['server_id']
-        print(self.scope)
-        await self.channel_layer.group_add(self.interchange, self.channel_name)
+        self.current = CurrentCorpusX()
+        await self.current.add_node_to_pyre(self.interchange, self.server_id, "interserver")
+        await self.channel_layer.group_add(self.interchange+self.server_id, self.channel_name)
         await self.accept()
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(self.interchange, self.channel_name)
+        await self.current.remove_node_from_pyre(self.interchange, self.server_id, "interserver")
+        await self.channel_layer.group_discard(self.interchange+self.server_id, self.channel_name)
         pass
 
     async def receive(self, text_data, **kwargs):
         data = json.loads(text_data)
+
         await self.channel_layer.group_send(
-            self.interchange,
+            self.interchange+self.server_id,
             {
                 'type': 'communication_message',
                 'message': {
@@ -150,32 +164,39 @@ class SearchDataConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
         self.interchange = self.scope['url_route']['kwargs']['interchange']
         self.server_id = self.scope['url_route']['kwargs']['server_id']
-        await self.channel_layer.group_add(self.interchange+"_search", self.channel_name)
+        self.current = CurrentCorpusX()
+        await self.current.add_node_to_pyre(self.interchange, self.server_id, "search")
+        await self.channel_layer.group_add(self.interchange+self.server_id+"_search", self.channel_name)
         await self.accept()
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(self.interchange+"_search", self.channel_name)
+        await self.current.remove_node_from_pyre(self.interchange, self.server_id, "search")
+        await self.channel_layer.group_discard(self.interchange+self.server_id+"_search", self.channel_name)
         pass
 
     async def receive(self, text_data, **kwargs):
         data = json.loads(text_data)
         if data["requestType"] == "search":
-            await self.channel_layer.group_send(
-                self.interchange+"_search",
-                {
-                    'type': 'communication_message',
-                    'message': {
-                        'message': data['message'],
-                        'requestType': data['requestType'],
-                        'senderID': "host",
-                        'targetID': "test_server",
-                        'channelType': "search",
-                        'data': data['data'],
-                        'clientID': data["clientID"],
-                        'sessionID': data["sessionID"]
-                    }
-                }
-            )
+            self.current = CurrentCorpusX()
+            nodes = await self.current.get_associated_nodes(self.interchange, "search")
+            if nodes:
+                for n in nodes:
+                    await self.channel_layer.group_send(
+                        self.interchange+n+"_search",
+                        {
+                            'type': 'communication_message',
+                            'message': {
+                                'message': data['message'],
+                                'requestType': data['requestType'],
+                                'senderID': "host",
+                                'targetID': "test_server",
+                                'channelType': "search",
+                                'data': data['data'],
+                                'clientID': data["clientID"],
+                                'sessionID': data["sessionID"]
+                            }
+                        }
+                    )
         elif data["requestType"] == "search-result":
             await self.channel_layer.group_send(
                 data["sessionID"]+"_result",
@@ -196,7 +217,6 @@ class SearchDataConsumer(AsyncJsonWebsocketConsumer):
 
     async def communication_message(self, event):
         data = event['message']
-        print(data)
         await self.send_json({
             'message': data['message'],
             'senderID': data['senderID'],
@@ -242,35 +262,45 @@ class UserSendConsumer(AsyncWebsocketConsumer):
                     }
                 }
             )
-            await self.channel_layer.group_send("public" + "_search", {
-                'type': 'communication_message',
-                'message': {
-                    'message': data['message'],
-                    'requestType': data['requestType'],
-                    'senderID': "host",
-                    'targetID': "test_server",
-                    'channelType': "search",
-                    'data': data['data'],
-                    'clientID': self.client_id,
-                    'sessionID': self.session_id
-                }
-            })
+
+            self.current = CurrentCorpusX()
+            nodes = await self.current.get_associated_nodes("public", "file_request")
+            print(nodes)
+            if nodes:
+                for n in nodes:
+                    await self.channel_layer.group_send("public"+n.name + "_search", {
+                        'type': 'communication_message',
+                        'message': {
+                            'message': data['message'],
+                            'requestType': data['requestType'],
+                            'senderID': "host",
+                            'targetID': n.name,
+                            'channelType': "search",
+                            'data': data['data'],
+                            'clientID': self.client_id,
+                            'sessionID': self.session_id
+                        }
+                    })
         elif data['requestType'] == "user-file-request":
-            await self.channel_layer.group_send(
-                "public"+"_file_request", {
-                    'type': 'communication_message',
-                    'message': {
-                        'message': data['message'],
-                        'requestType': data['requestType'],
-                        'senderID': "host",
-                        'targetID': "test_server",
-                        'channelType': "file_request",
-                        'data': data['data'],
-                        'clientID': self.client_id,
-                        'sessionID': self.session_id
+            self.current = CurrentCorpusX()
+            nodes = await self.current.get_associated_nodes("public", "file_request")
+            for n in nodes:
+                await self.channel_layer.group_send(
+                    "public"+n.name+"_file_request", {
+                        'type': 'communication_message',
+                        'message': {
+                            'message': data['message'],
+                            'requestType': data['requestType'],
+                            'senderID': "host",
+                            'targetID': n.name,
+                            'channelType': "file_request",
+                            'data': data['data'],
+                            'clientID': self.client_id,
+                            'sessionID': self.session_id
+                        }
                     }
-                }
-            )
+                )
+
         else:
             await self.channel_layer.group_send(
                 self.session_id+"_send",
@@ -383,6 +413,58 @@ class CurrentCorpusX:
         ws.files.add(file)
         ws.save()
         return file
+
+    @database_sync_to_async
+    def add_node_to_pyre(self, pyre_name: str, node_name: str, channel_name: str):
+        pyre = Pyre.objects.get(name=pyre_name)
+        node = WebsocketNode.objects.get(name=node_name)
+        if channel_name == "file_request":
+            if node not in pyre.file_request_channel_connected_nodes.all():
+                pyre.file_request_channel_connected_nodes.add(node)
+        elif channel_name == "search":
+            if node not in pyre.search_data_channel_connected_nodes.all():
+                pyre.search_data_channel_connected_nodes.add(node)
+        elif channel_name == "result":
+            if node not in pyre.result_channel_connected_nodes.all():
+                pyre.result_channel_connected_nodes.add(node)
+        elif channel_name == "interserver":
+            if node not in pyre.interserver_channel_connected_nodes.all():
+                pyre.interserver_channel_connected_nodes.add(node)
+        pyre.save()
+
+    @database_sync_to_async
+    def remove_node_from_pyre(self, pyre_name: str, node_name: str, channel_name: str):
+        pyre = Pyre.objects.get(name=pyre_name)
+        node = WebsocketNode.objects.get(name=node_name)
+        if channel_name == "file_request":
+            if node in pyre.file_request_channel_connected_nodes.all():
+                pyre.file_request_channel_connected_nodes.remove(node)
+        elif channel_name == "search":
+            if node in pyre.search_data_channel_connected_nodes.all():
+                pyre.search_data_channel_connected_nodes.remove(node)
+        elif channel_name == "result":
+            if node in pyre.result_channel_connected_nodes.all():
+                pyre.result_channel_connected_nodes.remove(node)
+        elif channel_name == "interserver":
+            if node in pyre.interserver_channel_connected_nodes.all():
+                pyre.interserver_channel_connected_nodes.remove(node)
+        pyre.save()
+
+    @database_sync_to_async
+    def get_associated_nodes(self, pyre_name: str, channel_name: str) -> list[WebsocketNode]|None:
+        pyre = Pyre.objects.get(name=pyre_name)
+        if channel_name == "file_request":
+            nodes = list(pyre.file_request_channel_connected_nodes.all())
+        elif channel_name == "search":
+            nodes = list(pyre.search_data_channel_connected_nodes.all())
+        elif channel_name == "result":
+            nodes = list(pyre.result_channel_connected_nodes.all())
+        elif channel_name == "interserver":
+            nodes = list(pyre.interserver_channel_connected_nodes.all())
+        else:
+            nodes = []
+        return nodes
+
 
 class RemoteCorpusX:
     def __init__(self, url: str, api_key: str):

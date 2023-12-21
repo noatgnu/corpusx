@@ -2,3 +2,4 @@ data
 staticfiles
 media
 *.pyc
+__pycache__

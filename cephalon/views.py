@@ -11,7 +11,7 @@ from ninja.files import UploadedFile
 from ninja.pagination import paginate
 import hashlib
 from cephalon.authentications import AuthBearer, AuthApiKey, AuthApiKeyHeader
-from cephalon.models import Project, ProjectFile, ChunkedUpload, ProjectFileContent, WebsocketSession
+from cephalon.models import Project, ProjectFile, ChunkedUpload, ProjectFileContent, WebsocketSession, WebsocketNode, Pyre
 from cephalon.schemas import ProjectSchema, ProjectPostSchema, FileSchema, FilePostSchema, ChunkedUploadSchema, \
     HashErrorSchema, ChunkedUploadInitSchema, ChunkedUploadCompleteSchema, BadRequestSchema
 
@@ -141,18 +141,9 @@ def complete_chunked_upload(request, upload_id: str, body: ChunkedUploadComplete
             file.project = project
             file.save()
     if (body.file_id or body.create_file) and body.load_file_content:
-        with open(file.file.path, "rt") as f:
-
-            content = f.read()
-            content = re.split(r"[\s\n\t]", content)
-            # segment file content into chunks ensure that the segment won't cut off a word by 200*200 words
-            for i in range(0, len(content), 200 * 200):
-                if i + 200 * 200 > len(content):
-                    ProjectFileContent.objects.create(project_file=file, data=" ".join(content[i:]))
-                else:
-                    ProjectFileContent.objects.create(project_file=file, data=" ".join(content[i:i + 200 * 200]))
-            file.load_file_content = True
-            file.save()
+        file.load_file()
+        file.load_file_content = True
+        file.save()
     if body.delete:
         chunked_upload = ChunkedUpload.objects.get(upload_id=upload_id)
         chunked_upload.file.delete()
@@ -226,6 +217,35 @@ def websocket_session_id(request):
 
 @api.post("/receive_key", auth=[AuthApiKey(), AuthApiKeyHeader()])
 def receive_key(request, key: str = Form(...)):
-    request.auth.key.receive_key(key)
-    request.auth.key.save()
+    request.auth.receive_key(key)
+    request.auth.save()
     return HttpResponse(status=200)
+
+@api.post("/register_node", auth=[AuthApiKey(), AuthApiKeyHeader()])
+def register_node(request, node_name: str = Form(...)):
+    nodes = WebsocketNode.objects.filter(name=node_name)
+    if nodes:
+        node = nodes[0]
+        if node.api_key == request.auth:
+            return {"id": node.id, "name": node.name}
+        else:
+            return HttpResponse(status=403)
+    else:
+        node = WebsocketNode.objects.create(name=node_name, api_key=request.auth)
+        return {"id": node.id, "name": node.name}
+
+@api.get("/pyres", response=list[str], auth=[AuthApiKey(), AuthApiKeyHeader(), AuthBearer()])
+def get_pyres(request):
+    return [i.name for i in Pyre.objects.all()]
+
+@api.get("/pyres/{pyre_name}", auth=[AuthBearer(), AuthApiKey(), AuthApiKeyHeader()])
+def get_pyre(request, pyre_name: str):
+    pyres = Pyre.objects.filter(name=pyre_name)
+    if pyres:
+        pyre = pyres[0]
+        if request.auth in pyre.apikey_set.all():
+            return HttpResponse(status=200)
+        else:
+            return HttpResponse(status=403)
+    return HttpResponse(status=200)
+

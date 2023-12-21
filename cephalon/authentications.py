@@ -30,8 +30,8 @@ class AuthApiKeyHeader(APIKeyHeader):
     def authenticate(self, request, key):
         try:
             hashed_key = make_password(key, hasher=Sha512ApiKeyHasher())
-            return APIKey.objects.get(key=hashed_key)
+            api_key = APIKey.objects.get(key=hashed_key)
+            return api_key
         except APIKey.DoesNotExist:
             pass
-
 

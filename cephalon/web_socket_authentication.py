@@ -23,10 +23,11 @@ class WebsocketInterchangeAPIKeyAuthenticationMiddleware:
 
     async def __call__(self, scope, receive, send):
         for k in scope["headers"]:
+            print(k)
             if k[0] == b'x-api-key':
                 api_key = k[1].decode("utf-8")
                 api_key = await get_APIKey(api_key)
                 scope["api_key"] = api_key
                 break
-        print(scope)
+
         return await self.app(scope, receive, send)

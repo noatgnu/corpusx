@@ -121,6 +121,17 @@ class ProjectFile(models.Model):
     def remove_file_content(self):
         self.content.all().delete()
 
+    def check_file_permission(self, api_key=None):
+        if api_key.access_all:
+            return True
+        else:
+            project_access = api_key.access_topics.all().values_list("projects", flat=True)
+            if self.project.id in project_access:
+                return True
+            else:
+                return False
+
+
 class ProjectFileContent(models.Model):
     """
     A model to store data of textfiles directly in the database
@@ -224,6 +235,23 @@ class APIKey(models.Model):
     def decrypt_remote_api_key(self):
         return decode_signed_token(self.remote_pair.key, settings.SECRET_KEY)["key"]
 
+    def get_associated_projects(self):
+        """
+        a method to get a list of all projects that this api key has access to also add project that is not directly associated to the key but is available through a topic
+        """
+        projects = self.project.all()
+        for topic in self.access_topics.all():
+            projects = projects.union(topic.projects.all())
+        return projects.distinct()
+
+    def get_all_files(self):
+        """
+        a method to get a list of all files that this api key has access to also add files that is not directly associated to the key but is available through a topic
+        """
+        files = ProjectFile.objects.filter(project__in=self.get_associated_projects())
+        return files.distinct()
+
+
 class APIKeyRemote(models.Model):
     """
     A model to store API keys generated for this instance to communicate to other instances
@@ -245,6 +273,8 @@ class APIKeyRemote(models.Model):
 
     def __repr__(self):
         return f"{self.name} {self.created} for {self.hostname}"
+
+
 
 class ChunkedUpload(models.Model):
     """
@@ -370,4 +400,10 @@ class WebsocketSession(models.Model):
 def create_auth_token(sender, instance=None, created=False, **kwargs):
     if created:
         Token.objects.create(user=instance)
+
+@receiver(post_save, sender=APIKey)
+def add_public_topic(sender, instance=None, created=False, **kwargs):
+    if created:
+        instance.access_topics.add(Topic.objects.get(name="public"))
+        instance.save()
 

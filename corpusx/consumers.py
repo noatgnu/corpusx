@@ -387,11 +387,6 @@ class CurrentCorpusX:
     @database_sync_to_async
     def search(self, term: str, description: str = "", session_id: str = "", pyre_name: str = "public"):
         query = SearchQuery(term, search_type="phrase")
-        files = ProjectFile.objects.all()
-        if pyre_name != "":
-            pyre = Pyre.objects.get(name=pyre_name)
-            if pyre:
-                files = files.filter(project__pyre=pyre)
         files = ProjectFile.objects.annotate(
             search=SearchVector('content__data'),
             headline=SearchHeadline("content__data",

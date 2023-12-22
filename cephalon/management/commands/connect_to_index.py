@@ -24,7 +24,7 @@ class Command(BaseCommand):
 
     async def connect_to_server(self, options, channel_type="initial"):
         async for websocket in websockets.connect(f"{self.protocol.replace('http', 'ws')}://{self.hostname}:{self.port}/ws/{channel_type}/{options['interchange']}/{options['server_id']}/", extra_headers={
-            #"Origin": f"http://{options['host']}:{options['port']}",
+            "Origin": f"{self.protocol}://{self.hostname}:{self.port}",
             "X-API-Key": self.decoded_api_key
         }):
             current = CurrentCorpusX()

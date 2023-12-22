@@ -45,7 +45,8 @@ class RemoteFileConsumer(AsyncWebsocketConsumer):
                                 'channelType': "file",
                                 'data': data['data'],
                                 'clientID': data["clientID"],
-                                'sessionID': data["sessionID"]
+                                'sessionID': data["sessionID"],
+                                'pyreName': self.interchange
                             }
                         }
                     )
@@ -66,7 +67,8 @@ class RemoteFileConsumer(AsyncWebsocketConsumer):
                             'channelType': "result",
                             'data': data['data'],
                             'clientID': data["clientID"],
-                            'sessionID': data["sessionID"]
+                            'sessionID': data["sessionID"],
+                            'pyreName': self.interchange
                         }
                     }
                 )
@@ -82,7 +84,8 @@ class RemoteFileConsumer(AsyncWebsocketConsumer):
             'channelType': "file",
             'data': data['data'],
             'clientID': data["clientID"],
-            'sessionID': data["sessionID"]
+            'sessionID': data["sessionID"],
+            'pyreName': self.interchange
         }))
 class RemoteResultConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -110,7 +113,10 @@ class RemoteResultConsumer(AsyncWebsocketConsumer):
                     'senderID': data['senderID'],
                     'targetID': data['clientID'],
                     'channelType': "result",
-                    'data': data['data']
+                    'data': data['data'],
+                    'clientID': data["clientID"],
+                    'sessionID': data["sessionID"],
+                    'pyreName': self.interchange
                 }
             }
         )
@@ -193,7 +199,8 @@ class SearchDataConsumer(AsyncJsonWebsocketConsumer):
                                 'channelType': "search",
                                 'data': data['data'],
                                 'clientID': data["clientID"],
-                                'sessionID': data["sessionID"]
+                                'sessionID': data["sessionID"],
+                                'pyreName': self.interchange
                             }
                         }
                     )
@@ -210,7 +217,8 @@ class SearchDataConsumer(AsyncJsonWebsocketConsumer):
                         'channelType': "user-result",
                         'data': data['data'],
                         'clientID': data["clientID"],
-                        'sessionID': data["sessionID"]
+                        'sessionID': data["sessionID"],
+                        'pyreName': self.interchange
                     }
                 }
             )
@@ -225,7 +233,8 @@ class SearchDataConsumer(AsyncJsonWebsocketConsumer):
             'channelType': "search",
             'data': data['data'],
             'clientID': data["clientID"],
-            'sessionID': data["sessionID"]
+            'sessionID': data["sessionID"],
+            'pyreName': self.interchange
         })
 
 
@@ -258,7 +267,9 @@ class UserSendConsumer(AsyncWebsocketConsumer):
                         'targetID': self.client_id,
                         'channelType': "user-result",
                         'data': result,
-                        'sessionID': self.session_id
+                        'sessionID': self.session_id,
+                        'clientID': self.client_id,
+                        'pyreName': data['pyreName'],
                     }
                 }
             )
@@ -278,7 +289,8 @@ class UserSendConsumer(AsyncWebsocketConsumer):
                             'channelType': "search",
                             'data': data['data'],
                             'clientID': self.client_id,
-                            'sessionID': self.session_id
+                            'sessionID': self.session_id,
+                            'pyreName': data['pyreName'],
                         }
                     })
         elif data['requestType'] == "user-file-request":
@@ -296,7 +308,8 @@ class UserSendConsumer(AsyncWebsocketConsumer):
                             'channelType': "file_request",
                             'data': data['data'],
                             'clientID': self.client_id,
-                            'sessionID': self.session_id
+                            'sessionID': self.session_id,
+                            'pyreName': data['pyreName'],
                         }
                     }
                 )
@@ -312,7 +325,10 @@ class UserSendConsumer(AsyncWebsocketConsumer):
                         'senderID': self.client_id,
                         'targetID': data['targetID'],
                         'channelType': "user-send",
-                        'data': {}
+                        'data': {},
+                        'sessionID': self.session_id,
+                        'clientID': self.client_id,
+                        'pyreName': data['pyreName'],
                     }
                 }
             )
@@ -325,7 +341,10 @@ class UserSendConsumer(AsyncWebsocketConsumer):
             'requestType': data['requestType'],
             'targetID': data['targetID'],
             'channelType': "user-send",
-            'data': data['data']
+            'data': data['data'],
+            'sessionID': self.session_id,
+            'clientID': self.client_id,
+            'pyreName': data['pyreName'],
         }))
 
 
@@ -344,7 +363,10 @@ class UserResultConsumer(AsyncWebsocketConsumer):
                     'senderID': "host",
                     'targetID': self.client_id,
                     'channelType': "user-result",
-                    'data': {}
+                    'data': {},
+                    'sessionID': self.session_id,
+                    'clientID': self.client_id,
+                    'pyreName': "public",
                 }
             })
 
@@ -366,7 +388,10 @@ class UserResultConsumer(AsyncWebsocketConsumer):
                     'senderID': self.client_id,
                     'targetID': data['targetID'],
                     'channelType': "user-result",
-                    'data': {}
+                    'data': {},
+                    'sessionID': self.session_id,
+                    'clientID': self.client_id,
+                    'pyreName': data['pyreName'],
                 }
             }
         )
@@ -379,7 +404,10 @@ class UserResultConsumer(AsyncWebsocketConsumer):
             'requestType': data['requestType'],
             'targetID': data['targetID'],
             'channelType': "user-result",
-            'data': data['data']
+            'data': data['data'],
+            'sessionID': self.session_id,
+            'clientID': self.client_id,
+            'pyreName': data['pyreName'],
         }))
 
 

@@ -419,6 +419,7 @@ class CurrentCorpusX:
         pyre = Pyre.objects.get(name=pyre_name)
         node = WebsocketNode.objects.get(name=node_name)
         if channel_name == "file_request":
+
             if node not in pyre.file_request_channel_connected_nodes.all():
                 pyre.file_request_channel_connected_nodes.add(node)
         elif channel_name == "search":
@@ -431,6 +432,7 @@ class CurrentCorpusX:
             if node not in pyre.interserver_channel_connected_nodes.all():
                 pyre.interserver_channel_connected_nodes.add(node)
         pyre.save()
+        print(f"Added {node} to {pyre} {channel_name}")
 
     @database_sync_to_async
     def remove_node_from_pyre(self, pyre_name: str, node_name: str, channel_name: str):

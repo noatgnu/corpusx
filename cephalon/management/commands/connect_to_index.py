@@ -6,7 +6,7 @@ import websockets
 
 import asyncio
 
-from cephalon.models import ProjectFile
+from cephalon.models import ProjectFile, APIKeyRemote, APIKey
 from cephalon.schemas import FileSchema
 from corpusx.consumers import CurrentCorpusX, RemoteCorpusX
 
@@ -14,6 +14,8 @@ corpusx_dict = {
     "send": RemoteCorpusX("http://localhost:8000", "test"),
     "receive": RemoteCorpusX("http://localhost:8001", "test")
 }
+
+
 class Command(BaseCommand):
     """
     A command to open a websocket connection to the index server.
@@ -21,8 +23,8 @@ class Command(BaseCommand):
 
 
     async def connect_to_server(self, options, channel_type="initial"):
-        async for websocket in websockets.connect(f"ws://{options['host']}:{options['port']}/ws/{channel_type}/{options['interchange']}/{options['server_id']}/", extra_headers={
-            "Origin": f"http://{options['host']}:{options['port']}", "X-API-Key": options['api_key']
+        async for websocket in websockets.connect(f"{self.protocol.replace('http', 'ws')}://{self.hostname}:{self.port}/ws/{channel_type}/{options['interchange']}/{options['server_id']}/", extra_headers={
+            #"Origin": f"http://{options['host']}:{options['port']}", "X-API-Key": options['api_key']
         }):
             current = CurrentCorpusX()
             try:
@@ -30,7 +32,7 @@ class Command(BaseCommand):
                     message = json.loads(message)
                     print(message)
                     if message["message"].startswith("welcome"):
-                        corpusx_dict[channel_type] = RemoteCorpusX(f"http://{options['host']}:{options['port']}", options['api_key'])
+                        corpusx_dict[channel_type] = RemoteCorpusX(f"{self.protocol}://{self.hostname}:{self.port}", self.decoded_api_key)
 
                     if channel_type=="search":
                         if message["targetID"] == options["server_id"]:
@@ -48,7 +50,7 @@ class Command(BaseCommand):
                     elif channel_type=="file_request":
                         if message["targetID"] == options["server_id"]:
                             old_file = await ProjectFile.objects.aget(id=message["data"]["id"])
-                            remote = RemoteCorpusX(f"http://{options['host']}:{options['port']}", options['api_key'])
+                            remote = RemoteCorpusX(f"{self.protocol}://{self.hostname}:{self.port}", self.decoded_api_key)
                             file = await remote.upload_chunked_file(old_file)
                             await websocket.send(json.dumps({
                                 "message": "File uploaded",
@@ -67,16 +69,32 @@ class Command(BaseCommand):
         await asyncio.gather(self.connect_to_server(options, channel_type="initial"), self.connect_to_server(options, channel_type="search"), self.connect_to_server(options, channel_type="file_request"))
 
     def add_arguments(self, parser):
-        parser.add_argument('host', type=str, help='Host of the index server')
-        parser.add_argument('port', type=str, help='Port of the index server')
+        #parser.add_argument('host', type=str, help='Host of the index server')
+        #parser.add_argument('port', type=str, help='Port of the index server')
         parser.add_argument('server_id', type=str, help='Server ID of the current server')
         parser.add_argument('interchange', type=str, help='Interchange name of the index server')
-        parser.add_argument('api_key', type=str, help='API key of the index server')
+        #parser.add_argument('api_key', type=str, help='API key of the index server')
+        parser.add_argument('api_key_name', type=str, help='Stored API key name')
 
     def handle(self, *args, **options):
-        with httpx.Client(headers={"X-API-Key": options['api_key']}) as client:
-            print(f"http://{options['host']}:{options['port']}/api/register_node")
-            res = client.post(f"http://{options['host']}:{options['port']}/api/register_node", data={"node_name": options['server_id']})
+        # with httpx.Client(headers={"X-API-Key": options['api_key']}) as client:
+        #     print(f"http://{options['host']}:{options['port']}/api/register_node")
+        #     res = client.post(f"http://{options['host']}:{options['port']}/api/register_node", data={"node_name": options['server_id']})
+        #     if res.status_code == 200:
+        #         loop = asyncio.get_event_loop()
+        #         asyncio.set_event_loop(loop)
+        #         loop.run_until_complete(self.connect(options))
+        #     else:
+        #         print("Error registering node")
+        self.api_key = APIKey.objects.get(name=options["api_key_name"])
+        self.remote_api_key = self.api_key.remote_pair
+        self.protocol = self.remote_api_key.protocol
+        self.hostname = self.remote_api_key.hostname
+        self.port = self.remote_api_key.port
+        self.decoded_api_key = self.api_key.decrypt_remote_api_key()
+
+        with httpx.Client(headers={"X-API-Key": self.decoded_api_key}) as client:
+            res = client.post(f"{self.remote_api_key.protocol}://{self.remote_api_key.hostname}:{self.remote_api_key.port}/api/register_node", data={"node_name": options['server_id']})
             if res.status_code == 200:
                 loop = asyncio.get_event_loop()
                 asyncio.set_event_loop(loop)

@@ -427,6 +427,7 @@ class CurrentCorpusX:
         elif pyre_name != "":
             pyre = Pyre.objects.get(name=pyre_name)
             files = pyre.get_all_files()
+            print(files)
         else:
             files = ProjectFile.objects.all()
 

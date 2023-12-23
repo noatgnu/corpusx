@@ -64,7 +64,6 @@ class ProjectFile(models.Model):
         ("csv", "csv"),
         ("tsv", "tsv"),
         ("txt", "tabulated text"),
-        ("txt", "space separated text"),
         ("json", "json"),
         ("other", "other")
     ]

@@ -37,7 +37,7 @@ class Command(BaseCommand):
 
                     if channel_type=="search":
                         if message["targetID"] == options["server_id"]:
-                            test_p = await current.search(message["data"]["term"], message["data"]["description"])
+                            test_p = await current.search(term=message["data"]["term"], description=message["data"]["description"])
                             if len(test_p) == 0:
                                 await websocket.send(json.dumps({
                                     "message": "No results found",

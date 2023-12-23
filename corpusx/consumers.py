@@ -254,7 +254,7 @@ class UserSendConsumer(AsyncWebsocketConsumer):
         if data['requestType'] == "user-search-query":
             current = CurrentCorpusX()
 
-            result = await current.search(data['data']['term'], data['data']['description'], self.session_id, data['pyreName'])
+            result = await current.search(term=data['data']['term'], description=data['data']['description'], session_id=self.session_id, pyre_name=data['pyreName'])
             if len(result) == 0:
                 message = "No results found"
             else:
@@ -420,11 +420,11 @@ class CurrentCorpusX:
         self.api_key = api_key
 
     @database_sync_to_async
-    def search(self, term: str, pyre_name: str, description: str = "", session_id: str = ""):
+    def search(self, term: str, pyre_name: str = "", description: str = "", session_id: str = ""):
         query = SearchQuery(term, search_type="phrase")
         if self.api_key:
             files = self.api_key.get_all_files().all()
-        elif pyre_name:
+        elif pyre_name != "":
             pyre = Pyre.objects.get(name=pyre_name)
             files = pyre.get_all_files()
         else:

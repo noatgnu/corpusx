@@ -26,6 +26,8 @@ class ProjectFileAdmin(admin.ModelAdmin):
     }
 
     def save_model(self, request, obj, form, change):
+        if obj._state.adding:
+            obj.save()
         if 'file' in form.changed_data:
             obj.save_altered()
         if 'load_file_content' in form.changed_data:

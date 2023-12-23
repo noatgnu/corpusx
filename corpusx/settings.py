@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'cephalon',
     'channels',
-
+    'dbbackup',
 ]
 
 MIDDLEWARE = [

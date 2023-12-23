@@ -7,7 +7,7 @@ from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer, AsyncJsonWebsocketConsumer
 from django.contrib.postgres.search import SearchQuery, SearchHeadline, SearchVector
 
-from cephalon.models import ProjectFile, Project, WebsocketSession, Pyre, WebsocketNode
+from cephalon.models import ProjectFile, Project, WebsocketSession, Pyre, WebsocketNode, APIKey
 from cephalon.schemas import FileSchema
 
 
@@ -255,13 +255,16 @@ class UserSendConsumer(AsyncWebsocketConsumer):
             current = CurrentCorpusX()
 
             result = await current.search(data['data']['term'], data['data']['description'], self.session_id, data['pyreName'])
-
+            if len(result) == 0:
+                message = "No results found"
+            else:
+                message = f"Results found {len(result)}"
             await self.channel_layer.group_send(
                 self.session_id+"_result",
                 {
                     'type': 'communication_message',
                     'message': {
-                        'message': "Result found.",
+                        'message': message,
                         'requestType': "search",
                         'senderID': "host",
                         'targetID': self.client_id,
@@ -412,15 +415,22 @@ class UserResultConsumer(AsyncWebsocketConsumer):
 
 
 class CurrentCorpusX:
+
+    def __init__(self, api_key: APIKey = None):
+        self.api_key = api_key
+
     @database_sync_to_async
-    def search(self, term: str, description: str = "", session_id: str = "", pyre_name: str = "public"):
+    def search(self, term: str, pyre_name: str, description: str = "", session_id: str = ""):
         query = SearchQuery(term, search_type="phrase")
-        files = ProjectFile.objects.annotate(
-            search=SearchVector('content__data'),
-            headline=SearchHeadline("content__data",
-                                    query,
-                                    start_sel="<b>", stop_sel="</b>")
-        ).filter(search=query)
+        if self.api_key:
+            files = self.api_key.get_all_files().all()
+        elif pyre_name:
+            pyre = Pyre.objects.get(name=pyre_name)
+            files = pyre.get_all_files()
+        else:
+            files = ProjectFile.objects.all()
+        print(files)
+        files = files.annotate(search=SearchVector('name', 'description', 'path'), rank=SearchHeadline('name', query))
         if description != '':
             files = files.filter(description__icontains=description)
         if session_id != '':

@@ -242,14 +242,15 @@ class APIKey(models.Model):
         projects = self.project.all()
         for topic in self.access_topics.all():
             projects = projects.union(topic.projects.all())
-        return projects.distinct()
+        return projects
 
     def get_all_files(self):
         """
         a method to get a list of all files that this api key has access to also add files that is not directly associated to the key but is available through a topic
         """
-        files = ProjectFile.objects.filter(project__in=self.get_associated_projects())
-        return files.distinct()
+        projects = self.get_associated_projects().values_list("id", flat=True)
+        files = ProjectFile.objects.filter(project_id__in=projects)
+        return files
 
 
 class APIKeyRemote(models.Model):
@@ -342,6 +343,7 @@ class Pyre(models.Model):
     result_request_channel_connected_nodes = models.ManyToManyField("WebsocketNode", related_name="result_request_channel", blank=True)
     interserver_channel_connected_nodes = models.ManyToManyField("WebsocketNode", related_name="interserver_channel", blank=True)
     search_data_channel_connected_nodes = models.ManyToManyField("WebsocketNode", related_name="search_data_channel", blank=True)
+    topics = models.ManyToManyField("Topic", blank=True)
 
     class Meta:
         ordering = ["id"]
@@ -352,6 +354,22 @@ class Pyre(models.Model):
 
     def __repr__(self):
         return f"{self.name} {self.created_at}"
+
+    def get_associated_projects(self):
+        """
+        a method to get a list of all projects that this pyre has access to also add project that is not directly associated to the pyre but is available through a topic
+        """
+        projects = self.topics.all().values_list("projects", flat=True)
+        return projects
+
+    def get_all_files(self):
+        """
+        a method to get a list of all files that this pyre has access to also add files that is not directly associated to the pyre but is available through a topic
+        """
+        projects = self.get_associated_projects()
+        files = ProjectFile.objects.filter(project_id__in=projects)
+        return files
+
 
 class WebsocketNode(models.Model):
     """
@@ -407,3 +425,8 @@ def add_public_topic(sender, instance=None, created=False, **kwargs):
         instance.access_topics.add(Topic.objects.get(name="public"))
         instance.save()
 
+@receiver(post_save, sender=Pyre)
+def add_public_topic_to_pyre(sender, instance=None, created=False, **kwargs):
+    if created:
+        instance.topics.add(Topic.objects.get(name="public"))
+        instance.save()

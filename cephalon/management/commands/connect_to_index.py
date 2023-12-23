@@ -27,7 +27,7 @@ class Command(BaseCommand):
             "Origin": f"{self.protocol}://{self.hostname}:{self.port}",
             "X-API-Key": self.decoded_api_key
         }):
-            current = CurrentCorpusX()
+            current = CurrentCorpusX(self.api_key)
             try:
                 async for message in websocket:
                     message = json.loads(message)
@@ -38,16 +38,28 @@ class Command(BaseCommand):
                     if channel_type=="search":
                         if message["targetID"] == options["server_id"]:
                             test_p = await current.search(message["data"]["term"], message["data"]["description"])
-                            await websocket.send(json.dumps({
-                                "message": "Results found",
-                                "requestType": "search-result",
-                                "senderID": options["server_id"],
-                                "targetID": "host",
-                                "channelType": channel_type,
-                                "sessionID": message["sessionID"],
-                                "data": test_p,
-                                "clientID": message["clientID"]
-                            }))
+                            if len(test_p) == 0:
+                                await websocket.send(json.dumps({
+                                    "message": "No results found",
+                                    "requestType": "search-result",
+                                    "senderID": options["server_id"],
+                                    "targetID": "host",
+                                    "channelType": channel_type,
+                                    "sessionID": message["sessionID"],
+                                    "data": [],
+                                    "clientID": message["clientID"]
+                                }))
+                            else:
+                                await websocket.send(json.dumps({
+                                    "message": f"Results found {len(test_p)}",
+                                    "requestType": "search-result",
+                                    "senderID": options["server_id"],
+                                    "targetID": "host",
+                                    "channelType": channel_type,
+                                    "sessionID": message["sessionID"],
+                                    "data": test_p,
+                                    "clientID": message["clientID"]
+                                }))
                     elif channel_type=="file_request":
                         if message["targetID"] == options["server_id"]:
                             old_file = await ProjectFile.objects.aget(id=message["data"]["id"])

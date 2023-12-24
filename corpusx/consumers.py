@@ -478,7 +478,7 @@ class CurrentCorpusX:
                             'data': result,
                             'sessionID': session_id,
                             'clientID': client_id,
-                            'pyreName': data['pyreName'],
+                            'pyreName': pyre_name,
                         }
                     }
                 ))
@@ -492,7 +492,7 @@ class CurrentCorpusX:
                     'data': result,
                     'sessionID': session_id,
                     'clientID': client_id,
-                    'pyreName': data['pyreName'],
+                    'pyreName': pyre_name,
                 })))
         return json_data
 

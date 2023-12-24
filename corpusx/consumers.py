@@ -437,7 +437,8 @@ class CurrentCorpusX:
             if i["id"] not in grouped_data:
                 grouped_data[i["id"]] = []
             grouped_data[i["id"]].append(i)
-        json_data = json.dumps(grouped_data)
+        exported_data = [{"id": i, "data": grouped_data[i]} for i in grouped_data]
+        json_data = json.dumps(exported_data)
         pyre = Pyre.objects.get(name=pyre_name)
         session = None
         if session_id:

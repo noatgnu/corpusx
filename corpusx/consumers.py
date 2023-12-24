@@ -259,7 +259,7 @@ class UserSendConsumer(AsyncWebsocketConsumer):
         data = json.loads(text_data)
         if data['requestType'] == "user-search-query":
             current = CurrentCorpusX(perspective="host")
-            current.search_enqueue.delay(current, data['data'], pyre_name=data['pyreName'], session_id=self.session_id, node_id=data['nodeID'], client_id=self.client_id)
+            current.search_enqueue.delay(current, data['data'], pyre_name=data['pyreName'], session_id=self.session_id, client_id=self.client_id)
             # result = await current.search(term=data['data']['term'], description=data['data']['description'], session_id=self.session_id, pyre_name=data['pyreName'])
             # if len(result) == 0:
             #     message = "No results found"

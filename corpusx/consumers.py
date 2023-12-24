@@ -466,9 +466,7 @@ class CurrentCorpusX:
         if session_id and client_id:
             if self.perspective == "host":
                 channel_layer = get_channel_layer()
-                async_to_sync(channel_layer.group_send(
-                    session_id + "_result",
-                    {
+                async_to_sync(channel_layer.group_send)(session_id + "_result", {
                         'type': 'communication_message',
                         'message': {
                             'message': message,
@@ -481,10 +479,9 @@ class CurrentCorpusX:
                             'clientID': client_id,
                             'pyreName': pyre_name,
                         }
-                    }
-                ))
+                    })
             elif self.perspective == "node" and websocket and server_id:
-                async_to_sync(websocket.send(json.dumps({
+                async_to_sync(websocket.send)(json.dumps({
                     'message': message,
                     'requestType': "search-result",
                     'senderID': server_id,
@@ -494,7 +491,7 @@ class CurrentCorpusX:
                     'sessionID': session_id,
                     'clientID': client_id,
                     'pyreName': pyre_name,
-                })))
+                }))
         return json_data
 
     @database_sync_to_async

@@ -258,30 +258,30 @@ class UserSendConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data, **kwargs):
         data = json.loads(text_data)
         if data['requestType'] == "user-search-query":
-            current = CurrentCorpusX()
-
-            result = await current.search(term=data['data']['term'], description=data['data']['description'], session_id=self.session_id, pyre_name=data['pyreName'])
-            if len(result) == 0:
-                message = "No results found"
-            else:
-                message = f"Results found {len(result)}"
-            await self.channel_layer.group_send(
-                self.session_id+"_result",
-                {
-                    'type': 'communication_message',
-                    'message': {
-                        'message': message,
-                        'requestType': "search",
-                        'senderID': "host",
-                        'targetID': self.client_id,
-                        'channelType': "user-result",
-                        'data': result,
-                        'sessionID': self.session_id,
-                        'clientID': self.client_id,
-                        'pyreName': data['pyreName'],
-                    }
-                }
-            )
+            current = CurrentCorpusX(perspective="host")
+            current.search_enqueue.delay(current, data['data'], pyre_name=data['pyreName'], session_id=self.session_id, node_id=data['nodeID'], client_id=self.client_id)
+            # result = await current.search(term=data['data']['term'], description=data['data']['description'], session_id=self.session_id, pyre_name=data['pyreName'])
+            # if len(result) == 0:
+            #     message = "No results found"
+            # else:
+            #     message = f"Results found {len(result)}"
+            # await self.channel_layer.group_send(
+            #     self.session_id+"_result",
+            #     {
+            #         'type': 'communication_message',
+            #         'message': {
+            #             'message': message,
+            #             'requestType': "search",
+            #             'senderID': "host",
+            #             'targetID': self.client_id,
+            #             'channelType': "user-result",
+            #             'data': result,
+            #             'sessionID': self.session_id,
+            #             'clientID': self.client_id,
+            #             'pyreName': data['pyreName'],
+            #         }
+            #     }
+            # )
 
             self.current = CurrentCorpusX()
             nodes = await self.current.get_associated_nodes("public", "file_request")
@@ -430,7 +430,7 @@ class CurrentCorpusX:
         self.perspective = perspective
 
     @job
-    def search_enqueue(self, query: dict, pyre_name: str = "", session_id: str = "", node_id: str = "", client_id: str = "", websocket: any = None):
+    def search_enqueue(self, query: dict, pyre_name: str = "", session_id: str = "", node_id: str = "", client_id: str = "", websocket: any = None, server_id: str = ""):
         data = async_to_sync(self.search)(query["term"], pyre_name, query["description"], session_id)
         grouped_data = {}
         for i in data:
@@ -482,13 +482,13 @@ class CurrentCorpusX:
                         }
                     }
                 ))
-            elif self.perspective == "node" and websocket:
+            elif self.perspective == "node" and websocket and server_id:
                 async_to_sync(websocket.send(json.dumps({
                     'message': message,
-                    'requestType': "search",
-                    'senderID': "host",
-                    'targetID': client_id,
-                    'channelType': "user-result",
+                    'requestType': "search-result",
+                    'senderID': server_id,
+                    'targetID': "host",
+                    'channelType': "search",
                     'data': result,
                     'sessionID': session_id,
                     'clientID': client_id,

@@ -423,16 +423,19 @@ class WebsocketSession(models.Model):
     def __repr__(self):
         return f"{self.session_id} {self.user} {self.created_at} {self.closed}"
 
+
 class SearchResult(models.Model):
     """
     A model to store search results
     """
+    node = models.ForeignKey(WebsocketNode, on_delete=models.CASCADE, related_name="search_results", blank=True, null=True)
     session = models.ForeignKey(WebsocketSession, on_delete=models.CASCADE, related_name="search_results", blank=True, null=True)
-    data = models.JSONField(blank=True, null=True)
+    pyre = models.ForeignKey(Pyre, on_delete=models.CASCADE, related_name="search_results", blank=True, null=True)
+    client_id = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    file = models.ForeignKey(ProjectFile, on_delete=models.CASCADE, related_name="search_results", blank=True, null=True)
-    search_query = models.TextField(blank=True, null=True)
+    file = models.FileField(upload_to="cephalon/files/search_results/", blank=True, null=True)
+    search_query = models.JSONField(blank=True, null=True)
     search_type = models.TextField(blank=True, null=True)
     search_id = models.TextField(blank=True, null=True)
     search_status_choices = [
@@ -442,6 +445,7 @@ class SearchResult(models.Model):
         ("failed", "failed")
     ]
     search_status = models.CharField(max_length=11, choices=search_status_choices, default="pending")
+    file_hash = models.TextField(blank=True, null=True)
 
     class Meta:
         ordering = ["id"]
@@ -452,6 +456,29 @@ class SearchResult(models.Model):
 
     def __repr__(self):
         return f"{self.session} {self.created_at} {self.search_status}"
+
+    def delete(self, using=None, keep_parents=False):
+        self.file.delete()
+        super().delete(using=using, keep_parents=keep_parents)
+
+    def verify_file(self):
+        hasher = hashlib.sha1()
+        with self.file.open("rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hasher.update(chunk)
+        hash = hasher.hexdigest()
+        if hash == self.file_hash:
+            return True
+        else:
+            return False
+
+    def update_hash(self):
+        hasher = hashlib.sha1()
+        with self.file.open("rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hasher.update(chunk)
+        self.file_hash = hasher.hexdigest()
+        self.save()
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)

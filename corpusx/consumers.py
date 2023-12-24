@@ -1,21 +1,27 @@
+import io
 import json
 from datetime import datetime
 from io import BytesIO
+
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from django.core.files import File
+from django.core.files.base import ContentFile
+from django_rq import job
 
 import httpx
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer, AsyncJsonWebsocketConsumer
 from django.contrib.postgres.search import SearchQuery, SearchHeadline, SearchVector
 
-from cephalon.models import ProjectFile, Project, WebsocketSession, Pyre, WebsocketNode, APIKey
-from cephalon.schemas import FileSchema
+from cephalon.models import ProjectFile, Project, WebsocketSession, Pyre, WebsocketNode, APIKey, SearchResult
+from cephalon.schemas import FileSchema, SearchResultSchema
 
 
 class RemoteFileConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.interchange = self.scope['url_route']['kwargs']['interchange']
         self.server_id = self.scope['url_route']['kwargs']['server_id']
-        self.current = CurrentCorpusX()
         await self.current.add_node_to_pyre(self.interchange, self.server_id, "file_request")
         await self.channel_layer.group_add(self.interchange+self.server_id+"_file_request", self.channel_name)
         await self.accept()
@@ -416,8 +422,79 @@ class UserResultConsumer(AsyncWebsocketConsumer):
 
 class CurrentCorpusX:
 
-    def __init__(self, api_key: APIKey = None):
+    def __init__(self, api_key: APIKey = None, session_id: str = None, client_id: str = None, pyre_name: str = None, perspective: str = 'host'):
         self.api_key = api_key
+        self.session_id = session_id
+        self.client_id = client_id
+        self.pyre_name = pyre_name
+        self.perspective = perspective
+
+    @job
+    def search_enqueue(self, query: dict, pyre_name: str = "", session_id: str = "", node_id: str = "", client_id: str = "", websocket: any = None):
+        data = async_to_sync(self.search)(query["term"], pyre_name, query["description"], session_id)
+        grouped_data = {}
+        for i in data:
+            if i["id"] not in grouped_data:
+                grouped_data[i["id"]] = []
+            grouped_data[i["id"]].append(i)
+        json_data = json.dumps(grouped_data)
+        pyre = Pyre.objects.get(name=pyre_name)
+        session = None
+        if session_id:
+            session = WebsocketSession.objects.get(session_id=session_id)
+        node = None
+        if node_id:
+            node = WebsocketNode.objects.get(name=node_id)
+
+        result = {}
+        if len(data) == 0:
+            message = "No results found"
+        else:
+            message = f"Results found {len(data)}"
+            data_file = SearchResult.objects.create(
+                pyre=pyre,
+                session=session,
+                node=node,
+                client_id=self.client_id,
+                search_query=json.dumps(query),
+                file=ContentFile(io.StringIO(json_data).read().encode(), name=f"{query['term']}.json"),
+                search_status="complete"
+            )
+            data_file.update_hash()
+
+            result = SearchResultSchema.from_orm(data_file).dict()
+        if session_id and client_id:
+            if self.perspective == "host":
+                async_to_sync(get_channel_layer().group_send(
+                    session_id + "_result",
+                    {
+                        'type': 'communication_message',
+                        'message': {
+                            'message': message,
+                            'requestType': "search",
+                            'senderID': "host",
+                            'targetID': client_id,
+                            'channelType': "user-result",
+                            'data': result,
+                            'sessionID': session_id,
+                            'clientID': client_id,
+                            'pyreName': data['pyreName'],
+                        }
+                    }
+                ))
+            elif self.perspective == "node" and websocket:
+                async_to_sync(websocket.send(json.dumps({
+                    'message': message,
+                    'requestType': "search",
+                    'senderID': "host",
+                    'targetID': client_id,
+                    'channelType': "user-result",
+                    'data': result,
+                    'sessionID': session_id,
+                    'clientID': client_id,
+                    'pyreName': data['pyreName'],
+                })))
+        return json_data
 
     @database_sync_to_async
     def search(self, term: str, pyre_name: str = "", description: str = "", session_id: str = ""):
@@ -430,7 +507,7 @@ class CurrentCorpusX:
         else:
             files = ProjectFile.objects.all()
 
-        files = files.filter(content__search_vector=query).annotate(headline=SearchHeadline('content__data', query, start_sel="<b>", stop_sel="</b>"))
+        files = files.filter(content__search_vector=query).annotate(headline=SearchHeadline('content__data', query, start_sel="<b>", stop_sel="</b>")).distinct()
         if description != '':
             files = files.filter(description__icontains=description)
         if session_id != '':

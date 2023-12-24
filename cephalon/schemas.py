@@ -72,3 +72,17 @@ class ChunkedUploadCompleteSchema(Schema):
     load_file_content: Optional[bool] = False
     project_id: Optional[int] = None
     path: Optional[tuple[str, ...]] = []
+
+class SearchResultSchema(Schema):
+    id: int
+    pyre_id: int
+    session_id: Optional[str] = None
+    client_id: Optional[str] = None
+    search_query: str
+
+class SearchResultInitSchema(Schema):
+    pyre_name: str
+    session_id: str
+    client_id: str
+    search_query: str
+    node_id: str

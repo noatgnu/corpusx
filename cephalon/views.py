@@ -11,9 +11,11 @@ from ninja.files import UploadedFile
 from ninja.pagination import paginate
 import hashlib
 from cephalon.authentications import AuthBearer, AuthApiKey, AuthApiKeyHeader
-from cephalon.models import Project, ProjectFile, ChunkedUpload, ProjectFileContent, WebsocketSession, WebsocketNode, Pyre
+from cephalon.models import Project, ProjectFile, ChunkedUpload, ProjectFileContent, WebsocketSession, WebsocketNode, \
+    Pyre, SearchResult
 from cephalon.schemas import ProjectSchema, ProjectPostSchema, FileSchema, FilePostSchema, ChunkedUploadSchema, \
-    HashErrorSchema, ChunkedUploadInitSchema, ChunkedUploadCompleteSchema, BadRequestSchema
+    HashErrorSchema, ChunkedUploadInitSchema, ChunkedUploadCompleteSchema, BadRequestSchema, SearchResultSchema, \
+    SearchResultInitSchema
 
 api = NinjaAPI(docs=Swagger(), title="Cephalon API")
 
@@ -248,4 +250,32 @@ def get_pyre(request, pyre_name: str):
         else:
             return HttpResponse(status=403)
     return HttpResponse(status=200)
+
+@api.post("/search_result", response=SearchResultSchema, auth=[AuthApiKeyHeader(), AuthApiKey()])
+def create_search_result(request, body: SearchResultInitSchema = Form(...)):
+    pyres = Pyre.objects.filter(name=body.pyre_name)
+    nodes = WebsocketNode.objects.Filter(name=body.node_id, api_key=request.auth)
+    if pyres and nodes:
+        pyre = pyres[0]
+        node = nodes[0]
+        if request.auth in pyre.apikey_set.all():
+            session = WebsocketSession.objects.get(session_id=body.session_id)
+            return SearchResult.objects.create(
+                pyre=pyre,
+                session=session,
+                client_id=body.client_id,
+                search_query=body.search_query,
+                node=node)
+    return HttpResponse(status=403)
+
+@api.post("/files/chunked/{upload_id}/complete/search_result/{search_result_id}", response={200: SearchResultSchema, 400: BadRequestSchema}, auth=[AuthApiKey(), AuthApiKeyHeader()])
+def complete_chunked_upload_search_result(request, upload_id: str, search_result_id: int):
+    chunked_upload = ChunkedUpload.objects.get(upload_id=upload_id)
+    search_result = SearchResult.objects.get(id=search_result_id)
+    search_result.file = ContentFile(chunked_upload.file.read(), name=chunked_upload.filename)
+    search_result.search_status = "complete"
+    search_result.save()
+    search_result.update_hash()
+    return 200, search_result
+
 

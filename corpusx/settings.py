@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'cephalon',
     'channels',
     'dbbackup',
+    'django_rq'
 ]
 
 MIDDLEWARE = [
@@ -228,5 +229,16 @@ CHANNEL_LAYERS = {
             "hosts": [REDIS_URL],
             "symmetric_encryption_keys": [SECRET_KEY]
         },
+    },
+}
+
+# RQ
+RQ_QUEUES = {
+    "default": {
+        "HOST": REDIS_HOST,
+        "PORT": REDIS_PORT,
+        "DB": REDIS_DB,
+        "PASSWORD": REDIS_PASSWORD,
+        "DEFAULT_TIMEOUT": 360,
     },
 }

@@ -23,6 +23,23 @@ services:
     volumes:
       - ./media:/app/media
       - ./staticfiles:/app/staticfiles
+  corpusx-worker:
+    build:
+      context: .
+      dockerfile: ./dockerfiles/Dockerfile
+    container_name: corpusx-worker
+    command: python manage.py rqworker default
+    environment:
+      - POSTGRES_NAME=postgres
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_HOST=dbcorpus
+      - REDIS_HOST=rediscorpus
+    networks:
+      - corpusx-net
+    volumes:
+      - ./media:/app/media
   nginx:
     build:
       context: .

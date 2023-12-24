@@ -451,7 +451,7 @@ class CurrentCorpusX:
         if len(data) == 0:
             message = "No results found"
         else:
-            message = f"Results found {len(data)}"
+            message = f"Results found {len(exported_data)}"
             data_file = SearchResult.objects.create(
                 pyre=pyre,
                 session=session,

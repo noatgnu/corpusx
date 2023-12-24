@@ -456,7 +456,7 @@ class CurrentCorpusX:
                 pyre=pyre,
                 session=session,
                 node=node,
-                client_id=self.client_id,
+                client_id=client_id,
                 search_query=json.dumps(query),
                 file=ContentFile(io.StringIO(json_data).read().encode(), name=f"{query['term']}.json"),
                 search_status="complete"

@@ -76,7 +76,7 @@ class ChunkedUploadCompleteSchema(Schema):
 class SearchResultSchema(Schema):
     id: int
     pyre_id: int
-    session_id: Optional[str] = None
+    session__session_id: Optional[str] = None
     client_id: Optional[str] = None
     search_query: str
 

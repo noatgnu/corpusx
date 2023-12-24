@@ -365,6 +365,26 @@ redis = ">=3,<4.0.0 || >4.0.0,<4.0.1 || >4.0.1"
 hiredis = ["redis[hiredis] (>=3,!=4.0.0,!=4.0.1)"]
 
 [[package]]
+name = "django-rq"
+version = "2.10.1"
+description = "An app that provides django integration for RQ (Redis Queue)"
+optional = false
+python-versions = "*"
+files = [
+    {file = "django-rq-2.10.1.tar.gz", hash = "sha256:c69af7b2b7d5745847cdaa80c58b70e564ea81c90712a11362d0bd8c71f5ce94"},
+    {file = "django_rq-2.10.1-py2.py3-none-any.whl", hash = "sha256:cf588efe248e275ef176190a7db49a33281049ff3857153577c2c49320bfd4bb"},
+]
+
+[package.dependencies]
+django = ">=3.2"
+redis = ">=3"
+rq = ">=1.14"
+
+[package.extras]
+sentry = ["raven (>=6.1.0)"]
+testing = ["mock (>=2.0.0)"]
+
+[[package]]
 name = "django-storages"
 version = "1.14.2"
 description = "Support for many storage backends in Django"
@@ -778,6 +798,21 @@ hiredis = ["hiredis (>=1.0.0)"]
 ocsp = ["cryptography (>=36.0.1)", "pyopenssl (==20.0.1)", "requests (>=2.26.0)"]
 
 [[package]]
+name = "rq"
+version = "1.15.1"
+description = "RQ is a simple, lightweight, library for creating background jobs, and processing them."
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "rq-1.15.1-py2.py3-none-any.whl", hash = "sha256:6e243d8d9c4af4686ded4b01b25ea1ff4bac4fc260b02638fbe9c8c17b004bd1"},
+    {file = "rq-1.15.1.tar.gz", hash = "sha256:1f49f4ac1a084044bb8e95b3f305c0bf17e55618b08c18e0b60c080f12d6f008"},
+]
+
+[package.dependencies]
+click = ">=5.0.0"
+redis = ">=4.0.0"
+
+[[package]]
 name = "sniffio"
 version = "1.3.0"
 description = "Sniff out which async library your code is running under"
@@ -943,4 +978,4 @@ brotli = ["Brotli"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "1509874df4bb355c2590fa59a345da7cce120af9d848c496c4ebf17c8afc5975"
+content-hash = "315132beb1c89b8a1dd0e2716fc8adeb086246b36939d83b3d1349f8d20c8410"

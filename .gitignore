@@ -3,3 +3,4 @@ staticfiles
 media
 *.pyc
 __pycache__
+secondnode

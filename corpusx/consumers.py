@@ -427,11 +427,10 @@ class CurrentCorpusX:
         elif pyre_name != "":
             pyre = Pyre.objects.get(name=pyre_name)
             files = pyre.get_all_files()
-            print(files)
         else:
             files = ProjectFile.objects.all()
 
-        files = files.annotate(search=SearchVector("content__data"), headline=SearchHeadline('content__data', query, start_sel="<b>", stop_sel="</b>")).filter(search=query)
+        files = files.filter(content__search_vector=query).annotate(headline=SearchHeadline('content__data', query, start_sel="<b>", stop_sel="</b>"))
         if description != '':
             files = files.filter(description__icontains=description)
         if session_id != '':

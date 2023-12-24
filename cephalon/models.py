@@ -5,7 +5,8 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-
+from django.contrib.postgres.search import SearchVectorField, SearchVector
+from django.contrib.postgres.indexes import GinIndex
 from cephalon.utils import create_signed_token, decode_signed_token, create_api_key, verify_api_key
 from django.conf import settings
 import hashlib
@@ -68,7 +69,15 @@ class ProjectFile(models.Model):
         ("other", "other")
     ]
     file_type = models.CharField(max_length=5, choices=file_type_choices, default="tsv")
-    file_category = models.TextField(blank=True, null=True)
+    file_category_choices = [
+        ("unprocessed", "unprocessed"),
+        ("searched", "searched"),
+        ("differential_analysis", "differential_analysis"),
+        ("sample_annotation", "sample_annotation"),
+        ("comparison_matrix", "comparison_matrix"),
+        ("other", "other")
+        ]
+    file_category = models.CharField(max_length=30, choices=file_category_choices, default="other")
     file = models.FileField(upload_to="cephalon/files/", blank=True, null=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="files", blank=True, null=True)
     load_file_content = models.BooleanField(default=False)
@@ -139,10 +148,14 @@ class ProjectFileContent(models.Model):
     project_file = models.ForeignKey(ProjectFile, on_delete=models.CASCADE, related_name="content", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    search_vector = SearchVectorField(null=True)
 
     class Meta:
         ordering = ["id"]
         app_label = "cephalon"
+        indexes = [
+            GinIndex(fields=["search_vector"])
+        ]
 
     def __str__(self):
         return f"Content of {self.project_file.name} {self.created_at}"
@@ -410,7 +423,35 @@ class WebsocketSession(models.Model):
     def __repr__(self):
         return f"{self.session_id} {self.user} {self.created_at} {self.closed}"
 
+class SearchResult(models.Model):
+    """
+    A model to store search results
+    """
+    session = models.ForeignKey(WebsocketSession, on_delete=models.CASCADE, related_name="search_results", blank=True, null=True)
+    data = models.JSONField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    file = models.ForeignKey(ProjectFile, on_delete=models.CASCADE, related_name="search_results", blank=True, null=True)
+    search_query = models.TextField(blank=True, null=True)
+    search_type = models.TextField(blank=True, null=True)
+    search_id = models.TextField(blank=True, null=True)
+    search_status_choices = [
+        ("pending", "pending"),
+        ("in_progress", "in_progress"),
+        ("complete", "complete"),
+        ("failed", "failed")
+    ]
+    search_status = models.CharField(max_length=11, choices=search_status_choices, default="pending")
 
+    class Meta:
+        ordering = ["id"]
+        app_label = "cephalon"
+
+    def __str__(self):
+        return f"{self.session} {self.created_at} {self.search_status}"
+
+    def __repr__(self):
+        return f"{self.session} {self.created_at} {self.search_status}"
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
@@ -428,4 +469,10 @@ def add_public_topic(sender, instance=None, created=False, **kwargs):
 def add_public_topic_to_pyre(sender, instance=None, created=False, **kwargs):
     if created:
         instance.topics.add(Topic.objects.get(name="public"))
+        instance.save()
+
+@receiver(post_save, sender=ProjectFileContent)
+def update_search_vector(sender, instance=None, created=False, **kwargs):
+    if created:
+        instance.search_vector = SearchVector("data")
         instance.save()

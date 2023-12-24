@@ -465,7 +465,8 @@ class CurrentCorpusX:
             result = SearchResultSchema.from_orm(data_file).dict()
         if session_id and client_id:
             if self.perspective == "host":
-                async_to_sync(get_channel_layer().group_send(
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send(
                     session_id + "_result",
                     {
                         'type': 'communication_message',

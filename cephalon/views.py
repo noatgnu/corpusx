@@ -260,8 +260,11 @@ def create_search_result(request, body: SearchResultInitSchema = Form(...)):
     if pyres and nodes:
         pyre = pyres[0]
         node = nodes[0]
+        print(body)
         if request.auth in pyre.apikey_set.all():
+            print(body)
             session = WebsocketSession.objects.get(session_id=body.session_id)
+            print(session)
             return SearchResult.objects.create(
                 pyre=pyre,
                 session=session,

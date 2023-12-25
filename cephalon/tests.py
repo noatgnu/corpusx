@@ -6,6 +6,10 @@ from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
 from django.contrib.auth.models import User
 
 import hashlib
+
+from cephalon.models import APIKey
+
+
 # Create your tests here.
 
 def add_test_user():
@@ -14,6 +18,10 @@ def add_test_user():
     user.set_password("testpassword")
     user.save()
     return user
+
+def add_test_api_key():
+    api_key = APIKey.objects.get_or_create(name="test")
+    return api_key.create_api_key()
 
 class ProjectModelTestCase(TestCase):
     def setUp(self):
@@ -117,3 +125,14 @@ class ChunkedUploadTestCase(TestCase):
                 assert e.json()["total_size"] == e.json()["offset"]
             else:
                 offset = e.json()["offset"]
+
+
+class SearchResultTestCase(TestCase):
+    def setUp(self):
+        api_key = add_test_api_key()
+        self.client = Client(headers={"X-API-Key": api_key})
+
+    def test_create_search_result(self):
+        d = self.client.post('/api/search_result', {"pyre_name": "test", "search_query": "test"})
+
+

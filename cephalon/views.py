@@ -281,7 +281,7 @@ def complete_chunked_upload_search_result(request, upload_id: str, search_result
     search_result.save()
     search_result.update_hash()
     channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(str(search_result.session.session_id) + "_result", json.dumps({
+    data = {
         'message': "Found results",
         'requestType': "search-result",
         'senderID': search_result.node.name,
@@ -291,7 +291,8 @@ def complete_chunked_upload_search_result(request, upload_id: str, search_result
         'sessionID': str(search_result.session.session_id),
         'clientID': search_result.client_id,
         'pyreName': search_result.pyre.name,
-    }))
+    }
+    async_to_sync(channel_layer.group_send)(search_result.pyre.name+search_result.node.name + "_result", json.dumps(data))
     return 200, search_result
 
 @api.get("/search_result/{search_result_id}/{session_id}/download")

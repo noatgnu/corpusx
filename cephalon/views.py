@@ -281,15 +281,14 @@ def complete_chunked_upload_search_result(request, upload_id: str, search_result
     search_result.save()
     search_result.update_hash()
     channel_layer = get_channel_layer()
-    result = {"id": search_result.id, "pyre_id": search_result.pyre.id, "session_id": str(search_result.session.session_id), "client_id": search_result.client_id, "search_query": search_result.search_query}
     async_to_sync(channel_layer.group_send)(search_result.session.session_id + "_result", json.dumps({
         'message': "Found results",
         'requestType': "search-result",
         'senderID': search_result.node.name,
         'targetID': "host",
         'channelType': "search",
-        'data': result,
-        'sessionID': search_result.session.session_id,
+        'data': SearchResultSchema.from_orm(search_result).dict(),
+        'sessionID': str(search_result.session.session_id),
         'clientID': search_result.session.client_id,
         'pyreName': search_result.pyre.name,
     }))

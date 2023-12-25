@@ -153,9 +153,9 @@ class ProjectFile(models.Model):
 
 
     async def upload_chunked_file(self, api_key):
-        decoded_api_key = decode_signed_token(api_key.key, settings.SECRET_KEY)["key"]
-        host = f"{api_key.remote_pair.protocol}://{api_key.remote_pair.host}:{api_key.remote_pair.port}"
-        with httpx.AsyncClient(headers={"X-API-Key": decoded_api_key}) as client:
+        decoded_api_key = api_key.decrypt_remote_api_key()
+        host = f"{api_key.remote_pair.protocol}://{api_key.remote_pair.hostname}:{api_key.remote_pair.port}"
+        async with httpx.AsyncClient(headers={"X-API-Key": decoded_api_key}) as client:
             d = await client.post(f"{host}/api/files/chunked", json={
                             "filename": self.name,
                             "size": self.file.size,
@@ -525,13 +525,14 @@ class SearchResult(models.Model):
         A method to send search result to remote server
         """
         search_result = await self.create_remote_result(api_key, pyre_name, session_id, client_id, node_id)
+        print(search_result)
         file = await self.upload_chunked_file(api_key, search_result["id"])
         return file
 
     async def upload_chunked_file(self, api_key, search_result_id):
-        decoded_api_key = decode_signed_token(api_key.key, settings.SECRET_KEY)["key"]
-        host = f"{api_key.remote_pair.protocol}://{api_key.remote_pair.host}:{api_key.remote_pair.port}"
-        with httpx.AsyncClient(headers={"X-API-Key": decoded_api_key}) as client:
+        decoded_api_key = api_key.decrypt_remote_api_key()
+        host = f"{api_key.remote_pair.protocol}://{api_key.remote_pair.hostname}:{api_key.remote_pair.port}"
+        async with httpx.AsyncClient(headers={"X-API-Key": decoded_api_key}) as client:
             d = await client.post(f"{host}/api/files/chunked", json={
                 "filename": self.file.name,
                 "size": self.file.size,
@@ -552,23 +553,24 @@ class SearchResult(models.Model):
                         break
                     else:
                         offset = progress.json()["offset"]
-                result = client.post(f"{host}/files/chunked/{upload_id}/complete/search_result/{search_result_id}")
+                result = await client.post(f"{host}/files/chunked/{upload_id}/complete/search_result/{search_result_id}")
                 return result.json()
 
     async def create_remote_result(self, api_key, pyre_name: str, session_id: str, client_id: str, node_id: str):
         """
         A method to create search result on remote server
         """
-        decoded_api_key = decode_signed_token(api_key.key, settings.SECRET_KEY)["key"]
-        host = f"{api_key.remote_pair.protocol}://{api_key.remote_pair.host}:{api_key.remote_pair.port}"
-        with httpx.AsyncClient(headers={"X-API-Key": decoded_api_key}) as client:
-            result = await client.post(f"{host}/api/search_results/", json={
+        decoded_api_key = api_key.decrypt_remote_api_key()
+        host = f"{api_key.remote_pair.protocol}://{api_key.remote_pair.hostname}:{api_key.remote_pair.port}"
+        async with httpx.AsyncClient(headers={"X-API-Key": decoded_api_key}) as client:
+            result = await client.post(f"{host}/api/search_result", data={
                 "pyre_name": pyre_name,
                 "session_id": session_id,
                 "client_id": client_id,
                 "search_query": self.search_query,
                 "node_id": node_id
             })
+            print(result.content)
             return result.json()
 
 

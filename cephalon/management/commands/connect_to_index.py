@@ -27,7 +27,7 @@ class Command(BaseCommand):
             "Origin": f"{self.protocol}://{self.hostname}:{self.port}",
             "X-API-Key": self.decoded_api_key
         }):
-            current = CurrentCorpusX(self.api_key)
+            current = CurrentCorpusX(self.api_key, perspective="node")
             try:
                 async for message in websocket:
                     message = json.loads(message)
@@ -37,7 +37,13 @@ class Command(BaseCommand):
 
                     if channel_type=="search":
                         if message["targetID"] == options["server_id"]:
-                            current.search_enqueue.delay(current, message["data"], message["pyreName"], message["sessionID"], options["server_id"], message["clientID"], websocket, options["server_id"])
+                            current.search_enqueue.delay(
+                                current,
+                                query=message["data"],
+                                pyre_name=message["pyreName"],
+                                session_id=message["sessionID"],
+                                node_id=options["server_id"],
+                                client_id=message["clientID"], server_id=options["server_id"])
                             # test_p = await current.search(term=message["data"]["term"], description=message["data"]["description"])
                             # print(test_p)
                             # if len(test_p) == 0:

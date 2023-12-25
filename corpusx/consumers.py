@@ -443,10 +443,12 @@ class CurrentCorpusX:
         pyre = Pyre.objects.get(name=pyre_name)
         session = None
         if session_id:
-            session = WebsocketSession.objects.get(session_id=session_id)
+            if self.perspective == "host":
+                session = WebsocketSession.objects.get(session_id=session_id)
         node = None
         if node_id:
-            node = WebsocketNode.objects.get(name=node_id)
+            if self.perspective == "host":
+                node = WebsocketNode.objects.get(name=node_id)
 
         result = {}
         if len(data) == 0:
@@ -514,10 +516,11 @@ class CurrentCorpusX:
         files = files.filter(content__search_vector=query).annotate(headline=SearchHeadline('content__data', query, start_sel="<b>", stop_sel="</b>")).distinct()
         if description != '':
             files = files.filter(description__icontains=description)
-        if session_id != '':
-            ws = WebsocketSession.objects.get(session_id=session_id)
-            ws.files.set(files)
-            ws.save()
+        if self.perspective == "host":
+            if session_id != '':
+                ws = WebsocketSession.objects.get(session_id=session_id)
+                ws.files.set(files)
+                ws.save()
         return [FileSchema.from_orm(i).dict() for i in files]
 
     @database_sync_to_async

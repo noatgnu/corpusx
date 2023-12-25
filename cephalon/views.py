@@ -256,7 +256,7 @@ def get_pyre(request, pyre_name: str):
 @api.post("/search_result", response=SearchResultSchema, auth=[AuthApiKeyHeader(), AuthApiKey()])
 def create_search_result(request, body: SearchResultInitSchema = Form(...)):
     pyres = Pyre.objects.filter(name=body.pyre_name)
-    nodes = WebsocketNode.objects.Filter(name=body.node_id, api_key=request.auth)
+    nodes = WebsocketNode.objects.filter(name=body.node_id, api_key=request.auth)
     if pyres and nodes:
         pyre = pyres[0]
         node = nodes[0]

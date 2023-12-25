@@ -592,12 +592,15 @@ class CurrentCorpusX:
     @job
     def upload_project_file(self, file: ProjectFile, session_id, client_id, pyre_name, server_id):
         file = async_to_sync(file.send_to_remote)(self.api_key)
-        httpx.post(f"{self.api_key.remote_pair.protocol}://{self.api_key.remote_pair.hostname}:{self.api_key.remote_pair.port}/api/notify/file_upload_completed/{session_id}/{client_id}", data={
+        decoded_api_key = self.api_key.decrypt_remote_api_key()
+        a = httpx.post(
+            f"{self.api_key.remote_pair.protocol}://{self.api_key.remote_pair.hostname}:{self.api_key.remote_pair.port}/api/notify/file_upload_completed/{session_id}/{client_id}", data={
             "file_id": file["id"],
             "pyre_name": pyre_name,
             "server_id": server_id,
-            "old_file": FileSchema.from_orm(file).dict()
-        })
+            "old_file": json.dumps(FileSchema.from_orm(file).dict())
+        }, headers={"X-API-Key": f"{decoded_api_key}"})
+        print(a.content)
         return file
 
 

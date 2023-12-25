@@ -91,4 +91,4 @@ class NotifyFileUploadComplete(Schema):
     file_id: int
     pyre_name: str
     server_id: str
-    old_file: FileSchema
+    old_file: str

@@ -309,6 +309,7 @@ def download_search_result(request, search_result_id: int, session_id: str):
 @api.post("/notify/file_upload_completed/{session_id}/{client_id}", auth=[AuthApiKey(), AuthApiKeyHeader()])
 def notify(request, session_id: str, client_id: str, body: NotifyFileUploadComplete = Form(...)):
     file = ProjectFile.objects.get(id=body.file_id)
+    old_file = json.loads(body.old_file)
     channel_layer = get_channel_layer()
     data = {
         'type': 'communication_message',
@@ -318,13 +319,12 @@ def notify(request, session_id: str, client_id: str, body: NotifyFileUploadCompl
             'senderID': body.server_id,
             'targetID': client_id,
             'channelType': "file",
-            'data': [body.old_file, FileSchema.from_orm(file).dict()],
+            'data': [old_file, FileSchema.from_orm(file).dict()],
             'sessionID': session_id,
             'clientID': client_id,
             'pyreName': body.pyre_name,
         }
     }
     async_to_sync(channel_layer.group_send)(session_id + "_result", data)
-    print(data)
     return HttpResponse(status=200)
 

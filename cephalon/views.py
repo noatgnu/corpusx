@@ -90,7 +90,7 @@ def update_project_file(request, file_id: int, body: FilePostSchema = Form(...))
     return file
 
 @api.post("/files/chunked", response=ChunkedUploadSchema, auth=[AuthApiKey(), AuthApiKeyHeader(), AuthBearer()])
-def initiate_chunked_upload(request, body: ChunkedUploadInitSchema):
+def initiate_chunked_upload(request, body: ChunkedUploadInitSchema = Form(...)):
     print(body)
     chunk = ChunkedUpload.objects.create(total_size=body.size, filename=body.filename, hash=body.data_hash, file_category=body.file_category, file=ContentFile(b"", name=body.filename))
     return chunk

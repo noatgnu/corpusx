@@ -295,7 +295,7 @@ def complete_chunked_upload_search_result(request, upload_id: str, search_result
             'pyreName': search_result.pyre.name,
         }
     }
-    async_to_sync(channel_layer.group_send)(search_result.pyre.name+search_result.node.name + "_result", json.dumps(data))
+    async_to_sync(channel_layer.group_send)(search_result.pyre.name+search_result.node.name + "_result", data)
     return 200, search_result
 
 @api.get("/search_result/{search_result_id}/{session_id}/download")

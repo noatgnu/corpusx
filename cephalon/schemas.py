@@ -86,3 +86,9 @@ class SearchResultInitSchema(Schema):
     client_id: str
     search_query: str
     node_id: str
+
+class NotifyFileUploadComplete(Schema):
+    file_id: int
+    pyre_name: str
+    server_id: str
+    old_file: FileSchema

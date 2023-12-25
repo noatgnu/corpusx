@@ -17,7 +17,7 @@ from cephalon.models import Project, ProjectFile, ChunkedUpload, ProjectFileCont
     Pyre, SearchResult
 from cephalon.schemas import ProjectSchema, ProjectPostSchema, FileSchema, FilePostSchema, ChunkedUploadSchema, \
     HashErrorSchema, ChunkedUploadInitSchema, ChunkedUploadCompleteSchema, BadRequestSchema, SearchResultSchema, \
-    SearchResultInitSchema
+    SearchResultInitSchema, NotifyFileUploadComplete
 
 api = NinjaAPI(docs=Swagger(), title="Cephalon API")
 
@@ -306,4 +306,24 @@ def download_search_result(request, search_result_id: int, session_id: str):
     response["X-Accel-Redirect"] = f"/media/{search_result.file.name}"
     return response
 
+@api.post("/notify/file_upload_completed/{session_id}/{client_id}", auth=[AuthApiKey(), AuthApiKeyHeader()])
+def notify(request, session_id: str, client_id: str, body: NotifyFileUploadComplete = Form(...)):
+    file = ProjectFile.objects.get(id=body.file_id)
+    channel_layer = get_channel_layer()
+    data = {
+        'type': 'communication_message',
+        'message': {
+            'message': "File uploaded",
+            'requestType': "file-upload",
+            'senderID': body.server_id,
+            'targetID': client_id,
+            'channelType': "result",
+            'data': [body.old_file, FileSchema.from_orm(file).dict()],
+            'sessionID': session_id,
+            'clientID': client_id,
+            'pyreName': body.pyre_name,
+        }
+    }
+    async_to_sync(channel_layer.group_send)(data["message"]["sessionID"] + "_result", data)
+    return HttpResponse(status=200)
 

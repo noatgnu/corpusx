@@ -589,6 +589,18 @@ class CurrentCorpusX:
             nodes = []
         return nodes
 
+    @job
+    def upload_project_file(self, file: ProjectFile, session_id, client_id, pyre_name, server_id):
+        file = async_to_sync(file.send_to_remote)(self.api_key)
+        httpx.post(f"{self.api_key.remote_pair.protocol}://{self.api_key.remote_pair.hostname}:{self.api_key.remote_pair.port}/api/notify/file_upload_completed/{session_id}/{client_id}", data={
+            "file_id": file["id"],
+            "pyre_name": pyre_name,
+            "server_id": server_id,
+            "old_file": FileSchema.from_orm(file).dict()
+        })
+        return file
+
+
 
 class RemoteCorpusX:
     def __init__(self, url: str, api_key: str):
@@ -613,7 +625,7 @@ class RemoteCorpusX:
         return projects
 
     async def upload_chunked_file(self, file: ProjectFile, project: Project = None):
-        d = await self.client.post(f"{self.url}/api/files/chunked", json={
+        d = await self.client.post(f"{self.url}/api/files/chunked", data={
                         "filename": file.name,
                         "size": file.file.size,
                         "data_hash": file.hash,

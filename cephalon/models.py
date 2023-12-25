@@ -4,6 +4,8 @@ import uuid
 from io import BytesIO
 
 import httpx
+from asgiref.sync import sync_to_async
+from channels.db import database_sync_to_async
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import post_save
@@ -132,6 +134,7 @@ class ProjectFile(models.Model):
     def remove_file_content(self):
         self.content.all().delete()
 
+    @database_sync_to_async
     def check_file_permission(self, api_key=None):
         if api_key.access_all:
             return True
@@ -146,7 +149,7 @@ class ProjectFile(models.Model):
         """
         a method to send file to remote server
         """
-        if self.check_file_permission(api_key):
+        if await self.check_file_permission(api_key):
             file = await self.upload_chunked_file(api_key)
             return file
         else:
@@ -157,7 +160,7 @@ class ProjectFile(models.Model):
         decoded_api_key = api_key.decrypt_remote_api_key()
         host = f"{api_key.remote_pair.protocol}://{api_key.remote_pair.hostname}:{api_key.remote_pair.port}"
         async with httpx.AsyncClient(headers={"X-API-Key": decoded_api_key}) as client:
-            d = await client.post(f"{host}/api/files/chunked", json={
+            d = await client.post(f"{host}/api/files/chunked", data={
                             "filename": self.name,
                             "size": self.file.size,
                             "data_hash": self.hash,
@@ -177,7 +180,7 @@ class ProjectFile(models.Model):
                         break
                     else:
                         offset = progress.json()["offset"]
-                result = client.post(f"{host}/api/files/chunked/{upload_id}/complete", json={"create_file": True})
+                result = await client.post(f"{host}/api/files/chunked/{upload_id}/complete", json={"create_file": True})
                 return result.json()
 
 

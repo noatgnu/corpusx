@@ -71,18 +71,20 @@ class Command(BaseCommand):
                     elif channel_type=="file_request":
                         if message["targetID"] == options["server_id"]:
                             old_file = await ProjectFile.objects.aget(id=message["data"]["id"])
-                            remote = RemoteCorpusX(f"{self.protocol}://{self.hostname}:{self.port}", self.decoded_api_key)
-                            file = await remote.upload_chunked_file(old_file)
-                            await websocket.send(json.dumps({
-                                "message": "File uploaded",
-                                "requestType": "file-upload",
-                                "senderID": options["server_id"],
-                                "targetID": "host",
-                                "channelType": channel_type,
-                                "sessionID": message["sessionID"],
-                                "data": [FileSchema.from_orm(old_file).dict(), file],
-                                "clientID": message["clientID"]
-                            }))
+                            #remote = RemoteCorpusX(f"{self.protocol}://{self.hostname}:{self.port}", self.decoded_api_key)
+                            file = current.upload_project_file.delay(current, old_file, message["data"]["sessionID"], message["data"]["clientID"], message["data"]["pyreName"], options["server_id"])
+                            print(file)
+                            #file = await remote.upload_chunked_file(old_file)
+                            # await websocket.send(json.dumps({
+                            #     "message": "File uploaded",
+                            #     "requestType": "file-upload",
+                            #     "senderID": options["server_id"],
+                            #     "targetID": "host",
+                            #     "channelType": channel_type,
+                            #     "sessionID": message["sessionID"],
+                            #     "data": [FileSchema.from_orm(old_file).dict(), file],
+                            #     "clientID": message["clientID"]
+                            # }))
 
             except websockets.ConnectionClosed:
                 continue

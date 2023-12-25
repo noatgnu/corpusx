@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 
 import hashlib
 
-from cephalon.models import APIKey
+from cephalon.models import APIKey, Pyre, WebsocketSession, WebsocketNode, Topic
 
 
 # Create your tests here.
@@ -21,7 +21,23 @@ def add_test_user():
 
 def add_test_api_key():
     api_key = APIKey.objects.get_or_create(name="test")
-    return api_key.create_api_key()
+    return (api_key[0].create_api_key(), api_key[0])
+
+def add_test_pyre():
+    pyre = Pyre.objects.get_or_create(name="test")
+    return pyre[0]
+
+def add_public_topic():
+    topic = Topic.objects.get_or_create(name="public")
+    return topic[0]
+
+def add_test_websocket_session():
+    websocket_session = WebsocketSession.objects.create()
+    return websocket_session
+
+def add_test_node():
+    node = WebsocketNode.objects.get_or_create(name="test")
+    return node[0]
 
 class ProjectModelTestCase(TestCase):
     def setUp(self):
@@ -129,10 +145,19 @@ class ChunkedUploadTestCase(TestCase):
 
 class SearchResultTestCase(TestCase):
     def setUp(self):
-        api_key = add_test_api_key()
-        self.client = Client(headers={"X-API-Key": api_key})
+        pass
 
     def test_create_search_result(self):
-        d = self.client.post('/api/search_result', {"pyre_name": "test", "search_query": "test"})
+        add_public_topic()
+        api_key = add_test_api_key()
+        pyre = add_test_pyre()
+        session = add_test_websocket_session()
+        session
+        node = add_test_node()
+        pyre.apikey_set.add(api_key[1])
+        pyre.save()
+        self.client = Client(headers={"X-API-Key": api_key[0]})
+        d = self.client.post('/api/search_result', {"pyre_name": pyre.name, "session_id": session.session_id, "client_id": "test", "search_query": "test", "node_id": node.name})
+        print(d)
 
 

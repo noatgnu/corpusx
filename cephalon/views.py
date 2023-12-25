@@ -256,15 +256,12 @@ def get_pyre(request, pyre_name: str):
 @api.post("/search_result", response=SearchResultSchema, auth=[AuthApiKeyHeader(), AuthApiKey()])
 def create_search_result(request, body: SearchResultInitSchema = Form(...)):
     pyres = Pyre.objects.filter(name=body.pyre_name)
-    nodes = WebsocketNode.objects.filter(name=body.node_id, api_key=request.auth)
+    nodes = WebsocketNode.objects.filter(name=body.node_id)
     if pyres and nodes:
         pyre = pyres[0]
         node = nodes[0]
-        print(body)
         if request.auth in pyre.apikey_set.all():
-            print(body)
             session = WebsocketSession.objects.get(session_id=body.session_id)
-            print(session)
             return SearchResult.objects.create(
                 pyre=pyre,
                 session=session,

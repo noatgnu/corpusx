@@ -72,7 +72,7 @@ class Command(BaseCommand):
                         if message["targetID"] == options["server_id"]:
                             old_file = await ProjectFile.objects.aget(id=message["data"]["id"])
                             #remote = RemoteCorpusX(f"{self.protocol}://{self.hostname}:{self.port}", self.decoded_api_key)
-                            file = current.upload_project_file.delay(current, old_file, message["data"]["sessionID"], message["data"]["clientID"], message["data"]["pyreName"], options["server_id"])
+                            file = current.upload_project_file.delay(current, old_file, message["sessionID"], message["clientID"], message["pyreName"], options["server_id"])
                             print(file)
                             #file = await remote.upload_chunked_file(old_file)
                             # await websocket.send(json.dumps({

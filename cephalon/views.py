@@ -317,13 +317,14 @@ def notify(request, session_id: str, client_id: str, body: NotifyFileUploadCompl
             'requestType': "file-upload",
             'senderID': body.server_id,
             'targetID': client_id,
-            'channelType': "result",
+            'channelType': "file",
             'data': [body.old_file, FileSchema.from_orm(file).dict()],
             'sessionID': session_id,
             'clientID': client_id,
             'pyreName': body.pyre_name,
         }
     }
-    async_to_sync(channel_layer.group_send)(data["message"]["sessionID"] + "_result", data)
+    async_to_sync(channel_layer.group_send)(session_id + "_result", data)
+    print(data)
     return HttpResponse(status=200)
 

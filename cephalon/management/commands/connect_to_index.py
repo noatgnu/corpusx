@@ -37,7 +37,7 @@ class Command(BaseCommand):
 
                     if channel_type=="search":
                         if message["targetID"] == options["server_id"]:
-                            current.search_enqueue.delay(current, message["data"], message["pyreName"], message["sessionID"], message["nodeID"], message["clientID"], websocket, options["server_id"])
+                            current.search_enqueue.delay(current, message["data"], message["pyreName"], message["sessionID"], options["server_id"], message["clientID"], websocket, options["server_id"])
                             # test_p = await current.search(term=message["data"]["term"], description=message["data"]["description"])
                             # print(test_p)
                             # if len(test_p) == 0:

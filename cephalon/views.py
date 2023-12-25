@@ -2,6 +2,8 @@ import json
 import re
 import uuid
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank, SearchHeadline
 from django.core.files.base import ContentFile
 from django.http import HttpResponse, StreamingHttpResponse
@@ -276,6 +278,18 @@ def complete_chunked_upload_search_result(request, upload_id: str, search_result
     search_result.search_status = "complete"
     search_result.save()
     search_result.update_hash()
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(search_result.session.session_id + "_result", json.dumps({
+        'message': "Found results",
+        'requestType': "search-result",
+        'senderID': search_result.node.name,
+        'targetID': "host",
+        'channelType': "search",
+        'data': SearchResultSchema.from_orm(search_result).dict(),
+        'sessionID': search_result.session.session_id,
+        'clientID': search_result.session.client_id,
+        'pyreName': search_result.pyre.name,
+    }))
     return 200, search_result
 
 @api.get("/search_result/{search_result_id}/{session_id}/download")

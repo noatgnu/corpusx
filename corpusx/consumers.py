@@ -431,7 +431,7 @@ class CurrentCorpusX:
         self.perspective = perspective
 
     @job
-    def search_enqueue(self, query: dict, pyre_name: str = "", session_id: str = "", node_id: str = "", client_id: str = "", websocket: any = None, server_id: str = ""):
+    def search_enqueue(self, query: dict, pyre_name: str = "", session_id: str = "", node_id: str = "", client_id: str = "", server_id: str = ""):
         data = async_to_sync(self.search)(query["term"], pyre_name, query["description"], session_id)
         grouped_data = {}
         for i in data:
@@ -485,19 +485,19 @@ class CurrentCorpusX:
                             'pyreName': pyre_name,
                         }
                     })
-            elif self.perspective == "node" and websocket and server_id:
-
-                async_to_sync(websocket.send)(json.dumps({
-                    'message': message,
-                    'requestType': "search-result",
-                    'senderID': server_id,
-                    'targetID': "host",
-                    'channelType': "search",
-                    'data': result,
-                    'sessionID': session_id,
-                    'clientID': client_id,
-                    'pyreName': pyre_name,
-                }))
+            # elif self.perspective == "node" and websocket and server_id:
+            #
+            #     async_to_sync(websocket.send)(json.dumps({
+            #         'message': message,
+            #         'requestType': "search-result",
+            #         'senderID': server_id,
+            #         'targetID': "host",
+            #         'channelType': "search",
+            #         'data': result,
+            #         'sessionID': session_id,
+            #         'clientID': client_id,
+            #         'pyreName': pyre_name,
+            #     }))
         return json_data
 
     @database_sync_to_async

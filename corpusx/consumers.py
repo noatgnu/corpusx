@@ -22,6 +22,7 @@ class RemoteFileConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.interchange = self.scope['url_route']['kwargs']['interchange']
         self.server_id = self.scope['url_route']['kwargs']['server_id']
+        self.current = CurrentCorpusX()
         await self.current.add_node_to_pyre(self.interchange, self.server_id, "file_request")
         await self.channel_layer.group_add(self.interchange+self.server_id+"_file_request", self.channel_name)
         await self.accept()
@@ -464,6 +465,9 @@ class CurrentCorpusX:
             data_file.update_hash()
 
             result = SearchResultSchema.from_orm(data_file).dict()
+            if self.perspective == "node":
+                result = async_to_sync(data_file.send_to_remote)(self.api_key, pyre_name, session_id, client_id, server_id)
+
         if session_id and client_id:
             if self.perspective == "host":
                 channel_layer = get_channel_layer()
@@ -482,6 +486,7 @@ class CurrentCorpusX:
                         }
                     })
             elif self.perspective == "node" and websocket and server_id:
+
                 async_to_sync(websocket.send)(json.dumps({
                     'message': message,
                     'requestType': "search-result",

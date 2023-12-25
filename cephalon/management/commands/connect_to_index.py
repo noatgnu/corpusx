@@ -37,30 +37,31 @@ class Command(BaseCommand):
 
                     if channel_type=="search":
                         if message["targetID"] == options["server_id"]:
-                            test_p = await current.search(term=message["data"]["term"], description=message["data"]["description"])
-                            print(test_p)
-                            if len(test_p) == 0:
-                                await websocket.send(json.dumps({
-                                    "message": "No results found",
-                                    "requestType": "search-result",
-                                    "senderID": options["server_id"],
-                                    "targetID": "host",
-                                    "channelType": channel_type,
-                                    "sessionID": message["sessionID"],
-                                    "data": [],
-                                    "clientID": message["clientID"]
-                                }))
-                            else:
-                                await websocket.send(json.dumps({
-                                    "message": f"Results found {len(test_p)}",
-                                    "requestType": "search-result",
-                                    "senderID": options["server_id"],
-                                    "targetID": "host",
-                                    "channelType": channel_type,
-                                    "sessionID": message["sessionID"],
-                                    "data": test_p,
-                                    "clientID": message["clientID"]
-                                }))
+                            current.search_enqueue.delay(current, message["data"], message["pyreName"], message["sessionID"], message["nodeID"], message["clientID"], websocket, options["server_id"])
+                            # test_p = await current.search(term=message["data"]["term"], description=message["data"]["description"])
+                            # print(test_p)
+                            # if len(test_p) == 0:
+                            #     await websocket.send(json.dumps({
+                            #         "message": "No results found",
+                            #         "requestType": "search-result",
+                            #         "senderID": options["server_id"],
+                            #         "targetID": "host",
+                            #         "channelType": channel_type,
+                            #         "sessionID": message["sessionID"],
+                            #         "data": [],
+                            #         "clientID": message["clientID"]
+                            #     }))
+                            # else:
+                            #     await websocket.send(json.dumps({
+                            #         "message": f"Results found {len(test_p)}",
+                            #         "requestType": "search-result",
+                            #         "senderID": options["server_id"],
+                            #         "targetID": "host",
+                            #         "channelType": channel_type,
+                            #         "sessionID": message["sessionID"],
+                            #         "data": test_p,
+                            #         "clientID": message["clientID"]
+                            #     }))
                     elif channel_type=="file_request":
                         if message["targetID"] == options["server_id"]:
                             old_file = await ProjectFile.objects.aget(id=message["data"]["id"])

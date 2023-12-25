@@ -1,3 +1,4 @@
+import os
 import re
 import uuid
 from io import BytesIO
@@ -532,13 +533,16 @@ class SearchResult(models.Model):
     async def upload_chunked_file(self, api_key, search_result_id):
         decoded_api_key = api_key.decrypt_remote_api_key()
         host = f"{api_key.remote_pair.protocol}://{api_key.remote_pair.hostname}:{api_key.remote_pair.port}"
-        async with httpx.AsyncClient(headers={"X-API-Key": decoded_api_key}) as client:
-            d = await client.post(f"{host}/api/files/chunked", json={
-                "filename": self.file.name,
+        data = {
+                "filename": os.path.split(self.file.name)[-1],
                 "size": self.file.size,
                 "data_hash": self.file_hash,
                 "file_category": "json"
-            })
+            }
+        print(data)
+        async with httpx.AsyncClient(headers={"X-API-Key": decoded_api_key}) as client:
+            d = await client.post(f"{host}/api/files/chunked", data=data)
+            print(d)
             upload_id = d.json()["upload_id"]
             with self.file.open("rb") as f:
                 offset = 0
@@ -570,7 +574,6 @@ class SearchResult(models.Model):
                 "search_query": self.search_query,
                 "node_id": node_id
             })
-            print(result.content)
             return result.json()
 
 

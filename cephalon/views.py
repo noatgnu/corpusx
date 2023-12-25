@@ -91,6 +91,7 @@ def update_project_file(request, file_id: int, body: FilePostSchema = Form(...))
 
 @api.post("/files/chunked", response=ChunkedUploadSchema, auth=[AuthApiKey(), AuthApiKeyHeader(), AuthBearer()])
 def initiate_chunked_upload(request, body: ChunkedUploadInitSchema):
+    print(body)
     chunk = ChunkedUpload.objects.create(total_size=body.size, filename=body.filename, hash=body.data_hash, file_category=body.file_category, file=ContentFile(b"", name=body.filename))
     return chunk
 
@@ -226,12 +227,7 @@ def receive_key(request, key: str = Form(...)):
     return HttpResponse(status=200)
 
 @api.post("/register_node", auth=[AuthApiKey(), AuthApiKeyHeader()])
-def register_node(request, node_name: str = Form(...), pyre_name: str = Form(...)):
-    pyres = Pyre.objects.filter(name=pyre_name)
-    if pyres:
-        pyre = pyres[0]
-        pyre.apikey_set.add(request.auth)
-        pyre.save()
+def register_node(request, node_name: str = Form(...)):
     nodes = WebsocketNode.objects.filter(name=node_name)
     if nodes:
         node = nodes[0]

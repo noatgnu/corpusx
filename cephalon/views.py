@@ -287,7 +287,7 @@ def complete_chunked_upload_search_result(request, upload_id: str, search_result
             'message': "Found results",
             'requestType': "search-result",
             'senderID': search_result.node.name,
-            'targetID': "host",
+            'targetID': search_result.client_id,
             'channelType': "search",
             'data': SearchResultSchema.from_orm(search_result).dict(),
             'sessionID': str(search_result.session.session_id),

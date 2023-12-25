@@ -226,11 +226,17 @@ def receive_key(request, key: str = Form(...)):
     return HttpResponse(status=200)
 
 @api.post("/register_node", auth=[AuthApiKey(), AuthApiKeyHeader()])
-def register_node(request, node_name: str = Form(...)):
+def register_node(request, node_name: str = Form(...), pyre_name: str = Form(...)):
+    pyres = Pyre.objects.filter(name=pyre_name)
+    if pyres:
+        pyre = pyres[0]
+        pyre.apikey_set.add(request.auth)
+        pyre.save()
     nodes = WebsocketNode.objects.filter(name=node_name)
     if nodes:
         node = nodes[0]
         if node.api_key == request.auth:
+
             return {"id": node.id, "name": node.name}
         else:
             return HttpResponse(status=403)

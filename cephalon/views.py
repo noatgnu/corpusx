@@ -289,7 +289,7 @@ def complete_chunked_upload_search_result(request, upload_id: str, search_result
         'channelType': "search",
         'data': SearchResultSchema.from_orm(search_result).dict(),
         'sessionID': str(search_result.session.session_id),
-        'clientID': search_result.session.client_id,
+        'clientID': search_result.client_id,
         'pyreName': search_result.pyre.name,
     }))
     return 200, search_result

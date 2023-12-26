@@ -434,7 +434,6 @@ class CurrentCorpusX:
     def search_enqueue(self, query: dict, pyre_name: str = "", session_id: str = "", node_id: str = "", client_id: str = "", server_id: str = ""):
         data = async_to_sync(self.search)(query["term"], pyre_name, query["description"], session_id)
         project_found = len(data["project"])
-        files_found = len(data["file"])
 
         pyre = Pyre.objects.get(name=pyre_name)
         session = None
@@ -471,7 +470,7 @@ class CurrentCorpusX:
                 })
 
         result = {}
-        if project_found:
+        if project_found == 0:
             message = "No results found"
         else:
             message = f"Results found"
@@ -547,7 +546,6 @@ class CurrentCorpusX:
                 result["project"].append(i.project)
             result["file"].append(FileSchema.from_orm(i).dict())
         result["project"] = [ProjectSchema.from_orm(p).dict() for p in result["project"]]
-
         return result
 
     @database_sync_to_async

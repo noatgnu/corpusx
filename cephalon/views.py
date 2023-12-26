@@ -284,7 +284,7 @@ def complete_chunked_upload_search_result(request, upload_id: str, search_result
     data = {
         'type': 'communication_message',
         'message': {
-            'message': "Found results",
+            'message': "Results found",
             'requestType': "search",
             'senderID': search_result.node.name,
             'targetID': search_result.client_id,

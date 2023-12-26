@@ -434,7 +434,7 @@ class CurrentCorpusX:
     def search_enqueue(self, query: dict, pyre_name: str = "", session_id: str = "", node_id: str = "", client_id: str = "", server_id: str = ""):
         data = async_to_sync(self.search)(query["term"], pyre_name, query["description"], session_id)
         project_found = len(data["project"])
-
+        print(project_found)
         pyre = Pyre.objects.get(name=pyre_name)
         session = None
         if session_id:
@@ -444,7 +444,6 @@ class CurrentCorpusX:
         if node_id:
             if self.perspective == "host":
                 node = WebsocketNode.objects.get(name=node_id)
-        print(data["project"])
         if project_found > 0:
             grouped_data = {}
             for i in data["file"]:
@@ -457,6 +456,7 @@ class CurrentCorpusX:
             json_data = json.dumps({"files": exported_data, "projects": exported_project})
         else:
             if self.perspective == "node":
+                print("no results")
                 res = httpx.post(f"{self.api_key.remote_pair.protocol}://{self.api_key.remote_pair.hostname}:{self.api_key.remote_pair.port}/api/notify/message/{session_id}/{client_id}", data={
                     "message": "No results found",
                     "requestType": "search",
@@ -468,6 +468,7 @@ class CurrentCorpusX:
                     "clientID": client_id,
                     "pyreName": pyre_name,
                 })
+                print(res)
 
         result = {}
         if project_found == 0:
@@ -519,7 +520,7 @@ class CurrentCorpusX:
             #         'clientID': client_id,
             #         'pyreName': pyre_name,
             #     }))
-        return json_data
+        #return json_data
 
     @database_sync_to_async
     def search(self, term: str, pyre_name: str = "", description: str = "", session_id: str = ""):

@@ -542,11 +542,10 @@ class SearchResult(models.Model):
                 "data_hash": self.file_hash,
                 "file_category": "json"
             }
-        print(data)
+
         async with httpx.AsyncClient(headers={"X-API-Key": decoded_api_key}) as client:
             d = await client.post(f"{host}/api/files/chunked", data=data)
-            print(d)
-            print(d.content)
+
             upload_id = d.json()["upload_id"]
             with self.file.open("rb") as f:
                 offset = 0
@@ -562,7 +561,6 @@ class SearchResult(models.Model):
                     else:
                         offset = progress.json()["offset"]
                 result = await client.post(f"{host}/api/files/chunked/{upload_id}/complete/search_result/{search_result_id}")
-                print(result.content)
                 return result.json()
 
     async def create_remote_result(self, api_key, pyre_name: str, session_id: str, client_id: str, node_id: str):

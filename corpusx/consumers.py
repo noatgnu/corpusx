@@ -260,6 +260,24 @@ class UserSendConsumer(AsyncWebsocketConsumer):
         data = json.loads(text_data)
         if data['requestType'] == "user-search-query":
             current = CurrentCorpusX(perspective="host")
+            await self.channel_layer.group_send(
+                self.session_id+"_result",
+                {
+                    'type': 'communication_message',
+                    'message': {
+                        'message': "Searching...",
+                        'requestType': "search-started",
+                        'senderID': "host",
+                        'targetID': self.client_id,
+                        'channelType': "user-result",
+                        'data': {},
+                        'sessionID': self.session_id,
+                        'clientID': self.client_id,
+                        'pyreName': data['pyreName'],
+                    }
+                }
+            )
+
             current.search_enqueue.delay(current, data['data'], pyre_name=data['pyreName'], session_id=self.session_id, client_id=self.client_id)
             # result = await current.search(term=data['data']['term'], description=data['data']['description'], session_id=self.session_id, pyre_name=data['pyreName'])
             # if len(result) == 0:

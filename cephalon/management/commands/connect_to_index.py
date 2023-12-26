@@ -37,6 +37,20 @@ class Command(BaseCommand):
 
                     if channel_type=="search":
                         if message["targetID"] == options["server_id"]:
+                            async with httpx.AsyncClient(headers={"X-API-Key": self.decoded_api_key}) as client:
+                                res = await client.post(f"{self.protocol}://{self.hostname}:{self.port}/api/notify/message/{message['sessionID']}/{message['clientID']}",
+                                                        data={
+                                                            "message": "Searching...",
+                                                            "requestType": "search-started",
+                                                            "senderID": options["server_id"],
+                                                            "targetID": message["clientID"],
+                                                            "channelType": channel_type,
+                                                            "sessionID": message["sessionID"],
+                                                            "data": [],
+                                                            "clientID": message["clientID"],
+                                                            "pyreName": message["pyreName"]
+                                                        })
+
                             current.search_enqueue.delay(
                                 current,
                                 query=message["data"],

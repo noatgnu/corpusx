@@ -474,19 +474,19 @@ class CurrentCorpusX:
             json_data = json.dumps({"files": exported_data, "projects": exported_project})
         else:
             if self.perspective == "node":
-                print("no results")
-                res = httpx.post(f"{self.api_key.remote_pair.protocol}://{self.api_key.remote_pair.hostname}:{self.api_key.remote_pair.port}/api/notify/message/{session_id}/{client_id}", data={
-                    "message": "No results found",
-                    "requestType": "search",
-                    "senderID": server_id,
-                    "targetID": client_id,
-                    "channelType": "user-result",
-                    "sessionID": session_id,
-                    "data": {},
-                    "clientID": client_id,
-                    "pyreName": pyre_name,
-                })
-                print(res)
+                with httpx.Client(headers={"X-API-Key": f"{self.api_key.decrypt_remote_api_key()}"}) as client:
+                    res = client.post(f"{self.api_key.remote_pair.protocol}://{self.api_key.remote_pair.hostname}:{self.api_key.remote_pair.port}/api/notify/message/{session_id}/{client_id}", data={
+                        "message": "No results found",
+                        "requestType": "search",
+                        "senderID": server_id,
+                        "targetID": client_id,
+                        "channelType": "user-result",
+                        "sessionID": session_id,
+                        "data": {},
+                        "clientID": client_id,
+                        "pyreName": pyre_name,
+                    })
+                    print(res.content)
 
         result = {}
         if project_found == 0:

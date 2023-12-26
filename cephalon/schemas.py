@@ -92,3 +92,14 @@ class NotifyFileUploadComplete(Schema):
     pyre_name: str
     server_id: str
     old_file: str
+
+class NotifyMessageSchema(Schema):
+    message: str
+    request_type: str
+    sender_id: str
+    target_id: str
+    channel_type: str
+    session_id: str
+    data: dict
+    client_id: str
+    pyre_name: str

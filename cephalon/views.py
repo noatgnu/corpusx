@@ -17,7 +17,7 @@ from cephalon.models import Project, ProjectFile, ChunkedUpload, ProjectFileCont
     Pyre, SearchResult
 from cephalon.schemas import ProjectSchema, ProjectPostSchema, FileSchema, FilePostSchema, ChunkedUploadSchema, \
     HashErrorSchema, ChunkedUploadInitSchema, ChunkedUploadCompleteSchema, BadRequestSchema, SearchResultSchema, \
-    SearchResultInitSchema, NotifyFileUploadComplete
+    SearchResultInitSchema, NotifyFileUploadComplete, NotifyMessageSchema
 
 api = NinjaAPI(docs=Swagger(), title="Cephalon API")
 
@@ -329,7 +329,7 @@ def notify(request, session_id: str, client_id: str, body: NotifyFileUploadCompl
     return HttpResponse(status=200)
 
 @api.post("/notify/message/{session_id}/{client_id}", auth=[AuthApiKey(), AuthApiKeyHeader()])
-def notify_message(request, session_id: str, client_id: str, body: dict = Form(...)):
+def notify_message(request, session_id: str, client_id: str, body: NotifyMessageSchema = Form(...)):
     channel_layer = get_channel_layer()
     data = {
         'type': 'communication_message',

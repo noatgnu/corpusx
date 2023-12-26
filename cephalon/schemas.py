@@ -95,11 +95,11 @@ class NotifyFileUploadComplete(Schema):
 
 class NotifyMessageSchema(Schema):
     message: str
-    request_type: str
-    sender_id: str
-    target_id: str
-    channel_type: str
-    session_id: str
+    requestType: str
+    senderID: str
+    targetID: str
+    channelType: str
+    sessionID: str
     data: dict
-    client_id: str
-    pyre_name: str
+    clientID: str
+    pyreName: str

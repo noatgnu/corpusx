@@ -444,7 +444,7 @@ class CurrentCorpusX:
         if node_id:
             if self.perspective == "host":
                 node = WebsocketNode.objects.get(name=node_id)
-
+        print(data["project"])
         if project_found > 0:
             grouped_data = {}
             for i in data["file"]:
@@ -457,7 +457,7 @@ class CurrentCorpusX:
             json_data = json.dumps({"files": exported_data, "projects": exported_project})
         else:
             if self.perspective == "node":
-                res = httpx.post(f"{pyre.remote_pair.protocol}://{pyre.remote_pair.hostname}:{pyre.remote_pair.port}/api/notify/message/{session_id}/{client_id}", data={
+                res = httpx.post(f"{self.api_key.remote_pair.protocol}://{self.api_key.remote_pair.hostname}:{self.api_key.remote_pair.port}/api/notify/message/{session_id}/{client_id}", data={
                     "message": "No results found",
                     "requestType": "search",
                     "senderID": server_id,

@@ -334,15 +334,15 @@ def notify_message(request, session_id: str, client_id: str, body: NotifyMessage
     data = {
         'type': 'communication_message',
         'message': {
-            'message': body["message"],
-            'requestType': body["requestType"],
-            'senderID': body["senderID"],
+            'message': body.message,
+            'requestType': body.requestType,
+            'senderID': body.senderID,
             'targetID': client_id,
-            'channelType': body["channelType"],
-            'data': body["data"],
+            'channelType': body.channelType,
+            'data': body.data,
             'sessionID': session_id,
             'clientID': client_id,
-            'pyreName': body["pyreName"],
+            'pyreName': body.pyreName,
         }
     }
     async_to_sync(channel_layer.group_send)(session_id + "_result", data)

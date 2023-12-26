@@ -15,7 +15,7 @@ class ProjectSchema(Schema):
     name: str
     description: str
     hash: str
-    metadata: dict
+    metadata: Optional[dict] = None
     global_id: str
     headline: Optional[str] = None
 

@@ -328,3 +328,22 @@ def notify(request, session_id: str, client_id: str, body: NotifyFileUploadCompl
     async_to_sync(channel_layer.group_send)(session_id + "_result", data)
     return HttpResponse(status=200)
 
+@api.post("/notify/message/{session_id}/{client_id}", auth=[AuthApiKey(), AuthApiKeyHeader()])
+def notify_message(request, session_id: str, client_id: str, body: dict = Form(...)):
+    channel_layer = get_channel_layer()
+    data = {
+        'type': 'communication_message',
+        'message': {
+            'message': body["message"],
+            'requestType': body["requestType"],
+            'senderID': body["senderID"],
+            'targetID': client_id,
+            'channelType': body["channelType"],
+            'data': body["data"],
+            'sessionID': session_id,
+            'clientID': client_id,
+            'pyreName': body["pyreName"],
+        }
+    }
+    async_to_sync(channel_layer.group_send)(session_id + "_result", data)
+    return HttpResponse(status=200)

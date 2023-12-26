@@ -15,7 +15,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer, AsyncJsonWebsocke
 from django.contrib.postgres.search import SearchQuery, SearchHeadline, SearchVector
 
 from cephalon.models import ProjectFile, Project, WebsocketSession, Pyre, WebsocketNode, APIKey, SearchResult
-from cephalon.schemas import FileSchema, SearchResultSchema
+from cephalon.schemas import FileSchema, SearchResultSchema, ProjectSchema
 
 
 class RemoteFileConsumer(AsyncWebsocketConsumer):
@@ -433,13 +433,9 @@ class CurrentCorpusX:
     @job
     def search_enqueue(self, query: dict, pyre_name: str = "", session_id: str = "", node_id: str = "", client_id: str = "", server_id: str = ""):
         data = async_to_sync(self.search)(query["term"], pyre_name, query["description"], session_id)
-        grouped_data = {}
-        for i in data:
-            if i["id"] not in grouped_data:
-                grouped_data[i["id"]] = []
-            grouped_data[i["id"]].append(i)
-        exported_data = [{"id": i, "data": grouped_data[i]} for i in grouped_data]
-        json_data = json.dumps(exported_data)
+        project_found = len(data["project"])
+        files_found = len(data["file"])
+
         pyre = Pyre.objects.get(name=pyre_name)
         session = None
         if session_id:
@@ -450,11 +446,35 @@ class CurrentCorpusX:
             if self.perspective == "host":
                 node = WebsocketNode.objects.get(name=node_id)
 
+        if project_found > 0:
+            grouped_data = {}
+            for i in data["file"]:
+                if i["id"] not in grouped_data:
+                    grouped_data[i["id"]] = []
+                grouped_data[i["id"]].append(i)
+            exported_data = [{"id": i, "data": grouped_data[i]} for i in grouped_data]
+
+            exported_project = [{"id": i["id"], "data": i} for i in data["project"]]
+            json_data = json.dumps({"files": exported_data, "projects": exported_project})
+        else:
+            if self.perspective == "node":
+                res = httpx.post(f"{pyre.remote_pair.protocol}://{pyre.remote_pair.hostname}:{pyre.remote_pair.port}/api/notify/message/{session_id}/{client_id}", data={
+                    "message": "No results found",
+                    "requestType": "search",
+                    "senderID": server_id,
+                    "targetID": client_id,
+                    "channelType": "user-result",
+                    "sessionID": session_id,
+                    "data": {},
+                    "clientID": client_id,
+                    "pyreName": pyre_name,
+                })
+
         result = {}
-        if len(data) == 0:
+        if project_found:
             message = "No results found"
         else:
-            message = f"Results found {len(exported_data)}"
+            message = f"Results found"
             data_file = SearchResult.objects.create(
                 pyre=pyre,
                 session=session,
@@ -521,7 +541,14 @@ class CurrentCorpusX:
                 ws = WebsocketSession.objects.get(session_id=session_id)
                 ws.files.set(files)
                 ws.save()
-        return [FileSchema.from_orm(i).dict() for i in files]
+        result = {"file": [], "project": []}
+        for i in files:
+            if i.project not in result["project"]:
+                result["project"].append(i.project)
+            result["file"].append(FileSchema.from_orm(i).dict())
+        result["project"] = [ProjectSchema.from_orm(p).dict() for p in result["project"]]
+
+        return result
 
     @database_sync_to_async
     def remove_session(self, session_id: str):

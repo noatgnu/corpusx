@@ -482,7 +482,7 @@ class CurrentCorpusX:
                         "targetID": client_id,
                         "channelType": "user-result",
                         "sessionID": session_id,
-                        "data": {},
+                        "data": "",
                         "clientID": client_id,
                         "pyreName": pyre_name,
                     })

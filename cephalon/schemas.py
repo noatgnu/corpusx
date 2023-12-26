@@ -100,6 +100,6 @@ class NotifyMessageSchema(Schema):
     targetID: str
     channelType: str
     sessionID: str
-    data: dict
+    data: str
     clientID: str
     pyreName: str

@@ -47,7 +47,7 @@ class Command(BaseCommand):
                                         "targetID": message["clientID"],
                                         "channelType": channel_type,
                                         "sessionID": message["sessionID"],
-                                        "data": {},
+                                        "data": "",
                                         "clientID": message["clientID"],
                                         "pyreName": message["pyreName"]
                                     })

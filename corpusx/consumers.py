@@ -507,6 +507,7 @@ class CurrentCorpusX:
             result = SearchResultSchema.from_orm(data_file).dict()
             if self.perspective == "node":
                 result = async_to_sync(data_file.send_to_remote)(self.api_key, pyre_name, session_id, client_id, server_id)
+                data_file.delete()
 
         if session_id and client_id:
             if self.perspective == "host":

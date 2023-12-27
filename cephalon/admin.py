@@ -2,20 +2,34 @@ from django.contrib import admin
 from django_json_widget.widgets import JSONEditorWidget
 
 from django.db import models
-from cephalon.models import APIKey, Project, ProjectFile, Pyre, WebsocketNode, Topic
+from cephalon.models import APIKey, Project, ProjectFile, Pyre, WebsocketNode, Topic, APIKeyRemote
 
 
 # Register your models here.
+class TopicInline(admin.TabularInline):
+    model = Topic.projects.through
+
 @admin.register(APIKey)
 class APIKeyAdmin(admin.ModelAdmin):
-    list_display = ("key", "user")
+    list_display = ("key", "user", "access_topics", "remote_pair", "expired")
+    fields = ("key", "user", "access_topics", "remote_pair", "expired", "expiry", "public_key", "access_all", "pyres")
+
+    def access_topics(self, obj):
+        return [t for t in obj.topics.all()]
+
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
     list_display = ("name", "description", "hash", "global_id")
+    fields = ("name", "description", "hash", "metadata", "global_id", "temporary", "user", "encrypted")
+    inlines = [
+        TopicInline,
+    ]
     formfield_overrides = {
         models.JSONField: {'widget': JSONEditorWidget},
     }
+
+
 
 @admin.register(ProjectFile)
 class ProjectFileAdmin(admin.ModelAdmin):
@@ -48,3 +62,8 @@ class WebsocketNodeAdmin(admin.ModelAdmin):
 @admin.register(Topic)
 class TopicAdmin(admin.ModelAdmin):
     list_display = ("name", "description")
+
+@admin.register(APIKeyRemote)
+class APIKeyRemote(admin.ModelAdmin):
+    list_display = ("key", "hostname", "protocol", "port")
+    fields = ("key", "hostname", "protocol", "port")

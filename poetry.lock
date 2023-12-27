@@ -203,6 +203,21 @@ files = [
 ]
 
 [[package]]
+name = "croniter"
+version = "2.0.1"
+description = "croniter provides iteration for datetime object with cron like format"
+optional = false
+python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+files = [
+    {file = "croniter-2.0.1-py2.py3-none-any.whl", hash = "sha256:4cb064ce2d8f695b3b078be36ff50115cf8ac306c10a7e8653ee2a5b534673d7"},
+    {file = "croniter-2.0.1.tar.gz", hash = "sha256:d199b2ec3ea5e82988d1f72022433c5f9302b3b3ea9e6bfd6a1518f6ea5e700a"},
+]
+
+[package.dependencies]
+python-dateutil = "*"
+pytz = ">2021.1"
+
+[[package]]
 name = "cryptography"
 version = "41.0.7"
 description = "cryptography is a package which provides cryptographic recipes and primitives to Python developers."
@@ -406,6 +421,26 @@ google = ["google-cloud-storage (>=1.27)"]
 libcloud = ["apache-libcloud"]
 s3 = ["boto3 (>=1.4.4)"]
 sftp = ["paramiko (>=1.15)"]
+
+[[package]]
+name = "django-tasks-scheduler"
+version = "1.2.4"
+description = "An async job scheduler for django using redis"
+optional = false
+python-versions = ">=3.9,<4.0"
+files = [
+    {file = "django_tasks_scheduler-1.2.4-py3-none-any.whl", hash = "sha256:3196a7989f42be6b320a7d21e25b1810d194536132110a2ac01b72ea21a8676b"},
+    {file = "django_tasks_scheduler-1.2.4.tar.gz", hash = "sha256:d90bac56b310e5b8bc9ba2d119a244aa0b1333c5ebc805e84a54a1a186a39bc9"},
+]
+
+[package.dependencies]
+click = ">=8.1,<9.0"
+croniter = ">=2.0.1,<3.0.0"
+django = ">=3.2"
+rq = ">=1.15,<2.0"
+
+[package.extras]
+yaml = ["pyyaml (>=6.0,<7.0)"]
 
 [[package]]
 name = "exceptiongroup"
@@ -769,6 +804,20 @@ docs = ["sphinx (>=4.5.0,<5.0.0)", "sphinx-rtd-theme", "zope.interface"]
 tests = ["coverage[toml] (==5.0.4)", "pytest (>=6.0.0,<7.0.0)"]
 
 [[package]]
+name = "python-dateutil"
+version = "2.8.2"
+description = "Extensions to the standard Python datetime module"
+optional = false
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
+files = [
+    {file = "python-dateutil-2.8.2.tar.gz", hash = "sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86"},
+    {file = "python_dateutil-2.8.2-py2.py3-none-any.whl", hash = "sha256:961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9"},
+]
+
+[package.dependencies]
+six = ">=1.5"
+
+[[package]]
 name = "pytz"
 version = "2023.3.post1"
 description = "World timezone definitions, modern and historical"
@@ -811,6 +860,17 @@ files = [
 [package.dependencies]
 click = ">=5.0.0"
 redis = ">=4.0.0"
+
+[[package]]
+name = "six"
+version = "1.16.0"
+description = "Python 2 and 3 compatibility utilities"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
+files = [
+    {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
+    {file = "six-1.16.0.tar.gz", hash = "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926"},
+]
 
 [[package]]
 name = "sniffio"
@@ -978,4 +1038,4 @@ brotli = ["Brotli"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "315132beb1c89b8a1dd0e2716fc8adeb086246b36939d83b3d1349f8d20c8410"
+content-hash = "d688a2298cb25b27cd31dc9472adf42ba83ef905b6ad24403fd5df91bf3d6246"

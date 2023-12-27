@@ -37,6 +37,7 @@ class Project(models.Model):
         app_label = "cephalon"
 
     def __str__(self):
+
         return f"{self.name} {self.created_at} {self.description}"
 
     def __repr__(self):
@@ -53,6 +54,13 @@ class Project(models.Model):
     def update_project_hash(self):
         self.hash = self.calculate_project_hash()
         self.save()
+
+    def get_topics(self):
+        """
+        a method to get a list of all topics that this project is associated with
+        """
+        topics = self.topic_set.all()
+        return topics
 
 
 class ProjectFile(models.Model):

@@ -47,7 +47,8 @@ INSTALLED_APPS = [
     'cephalon',
     'channels',
     'dbbackup',
-    'django_rq'
+    'django_rq',
+    'scheduler',
 ]
 
 MIDDLEWARE = [
@@ -241,4 +242,22 @@ RQ_QUEUES = {
         "PASSWORD": REDIS_PASSWORD,
         "DEFAULT_TIMEOUT": 360,
     },
+}
+
+# Tasks scheduler
+SCHEDULER_QUEUES = {
+    "default": {
+        "HOST": REDIS_HOST,
+        "PORT": REDIS_PORT,
+        "DB": REDIS_DB,
+        "PASSWORD": REDIS_PASSWORD,
+        "DEFAULT_TIMEOUT": 360,
+    },
+}
+
+SCHEDULER_CONFIG = {
+    'EXECUTIONS_IN_PAGE': 20,
+    'DEFAULT_RESULT_TTL': 500,
+    'DEFAULT_TIMEOUT': 300,  # 5 minutes
+    'SCHEDULER_INTERVAL': 10,  # 10 seconds
 }

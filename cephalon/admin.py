@@ -12,8 +12,8 @@ class TopicInline(admin.TabularInline):
 @admin.register(APIKey)
 class APIKeyAdmin(admin.ModelAdmin):
     list_display = ("key", "user", "access_topics", "remote_pair", "expired")
-    fields = ("key", "user", "access_topics", "remote_pair", "expired", "expiry", "public_key", "access_all", "pyres")
-
+    fields = ("user", "access_topics", "remote_pair", "expired", "expiry", "public_key", "access_all", "pyres")
+    readonly_fields = ("key",)
     def access_topics(self, obj):
         return [t for t in obj.topics.all()]
 
@@ -42,7 +42,9 @@ class ProjectFileAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if obj._state.adding:
             obj.save()
+
         if 'file' in form.changed_data:
+            obj.save()
             obj.save_altered()
         if 'load_file_content' in form.changed_data:
             if form.cleaned_data['load_file_content']:
@@ -66,4 +68,5 @@ class TopicAdmin(admin.ModelAdmin):
 @admin.register(APIKeyRemote)
 class APIKeyRemote(admin.ModelAdmin):
     list_display = ("key", "hostname", "protocol", "port")
-    fields = ("key", "hostname", "protocol", "port")
+    readonly_fields = ("key",)
+    fields = ("hostname", "protocol", "port")

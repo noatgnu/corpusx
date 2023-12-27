@@ -299,7 +299,7 @@ def complete_chunked_upload_search_result(request, upload_id: str, search_result
     return 200, search_result
 
 @api.get("/search_result/{search_result_id}/{session_id}/download")
-def download_search_result(request, search_result_id: int, session_id: str):
+def download_searchF_result(request, search_result_id: int, session_id: str):
     search_result = SearchResult.objects.get(id=search_result_id, session__session_id=session_id)
     response = HttpResponse(status=200)
     response["Content-Disposition"] = f"attachment; filename={search_result.file.name}"

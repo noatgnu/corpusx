@@ -261,3 +261,5 @@ SCHEDULER_CONFIG = {
     'DEFAULT_TIMEOUT': 300,  # 5 minutes
     'SCHEDULER_INTERVAL': 10,  # 10 seconds
 }
+
+ADMIN_CONTACT_EMAIL = os.environ.get("ADMIN_CONTACT_EMAIL", "test@cinder.proteo.info")

@@ -11,8 +11,8 @@ class TopicInline(admin.TabularInline):
 
 @admin.register(APIKey)
 class APIKeyAdmin(admin.ModelAdmin):
-    list_display = ("key", "user", "access_topics", "remote_pair", "expired")
-    fields = ("user", "access_topics", "remote_pair", "expired", "expiry", "public_key", "access_all", "pyres")
+    list_display = ("user", "access_topics", "remote_pair", "expired")
+    fields = ("key", "user", "access_topics", "remote_pair", "expired", "expiry", "public_key", "access_all", "pyres")
     readonly_fields = ("key",)
     def access_topics(self, obj):
         return [t for t in obj.topics.all()]
@@ -67,6 +67,6 @@ class TopicAdmin(admin.ModelAdmin):
 
 @admin.register(APIKeyRemote)
 class APIKeyRemote(admin.ModelAdmin):
-    list_display = ("key", "hostname", "protocol", "port")
+    list_display = ("hostname", "protocol", "port")
     readonly_fields = ("key",)
-    fields = ("hostname", "protocol", "port")
+    fields = ("key", "hostname", "protocol", "port")

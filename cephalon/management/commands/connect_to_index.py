@@ -9,7 +9,7 @@ import asyncio
 from cephalon.models import ProjectFile, APIKeyRemote, APIKey
 from cephalon.schemas import FileSchema
 from corpusx.consumers import CurrentCorpusX, RemoteCorpusX
-
+from django.conf import settings
 corpusx_dict = {
     "send": RemoteCorpusX("http://localhost:8000", "test"),
     "receive": RemoteCorpusX("http://localhost:8001", "test")
@@ -86,21 +86,37 @@ class Command(BaseCommand):
                             #     }))
                     elif channel_type=="file_request":
                         if message["targetID"] == options["server_id"]:
-                            old_file = await ProjectFile.objects.aget(id=message["data"]["id"])
-                            #remote = RemoteCorpusX(f"{self.protocol}://{self.hostname}:{self.port}", self.decoded_api_key)
-                            file = current.upload_project_file.delay(current, old_file, message["sessionID"], message["clientID"], message["pyreName"], options["server_id"])
-                            print(file)
-                            #file = await remote.upload_chunked_file(old_file)
-                            # await websocket.send(json.dumps({
-                            #     "message": "File uploaded",
-                            #     "requestType": "file-upload",
-                            #     "senderID": options["server_id"],
-                            #     "targetID": "host",
-                            #     "channelType": channel_type,
-                            #     "sessionID": message["sessionID"],
-                            #     "data": [FileSchema.from_orm(old_file).dict(), file],
-                            #     "clientID": message["clientID"]
-                            # }))
+                            if self.api_key.allow_download:
+                                old_file = await ProjectFile.objects.aget(id=message["data"]["id"])
+                                #remote = RemoteCorpusX(f"{self.protocol}://{self.hostname}:{self.port}", self.decoded_api_key)
+                                file = current.upload_project_file.delay(current, old_file, message["sessionID"], message["clientID"], message["pyreName"], options["server_id"])
+                                print(file)
+                                #file = await remote.upload_chunked_file(old_file)
+                                # await websocket.send(json.dumps({
+                                #     "message": "File uploaded",
+                                #     "requestType": "file-upload",
+                                #     "senderID": options["server_id"],
+                                #     "targetID": "host",
+                                #     "channelType": channel_type,
+                                #     "sessionID": message["sessionID"],
+                                #     "data": [FileSchema.from_orm(old_file).dict(), file],
+                                #     "clientID": message["clientID"]
+                                # }))
+                            else:
+                                with httpx.Client(headers={"X-API-Key": self.decoded_api_key}) as client:
+                                    res = client.post(
+                                        f"{self.api_key.remote_pair.protocol}://{self.api_key.remote_pair.hostname}:{self.api_key.remote_pair.port}/api/notify/message/{message['sessionID']}/{message['clientID']}",
+                                        data={
+                                            "message": "File request not allowed. Please contact the node administrator for more information",
+                                            "requestType": "file-request-not-allowed",
+                                            "senderID": options["server_id"],
+                                            "targetID": message["clientID"],
+                                            "channelType": channel_type,
+                                            "sessionID": message["sessionID"],
+                                            "data": settings.ADMIN_CONTACT_EMAIL,
+                                            "clientID": message["clientID"],
+                                            "pyreName": message["pyreName"]
+                                        })
 
             except websockets.ConnectionClosed:
                 continue

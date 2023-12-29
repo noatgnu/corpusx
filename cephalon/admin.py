@@ -2,7 +2,7 @@ from django.contrib import admin
 from django_json_widget.widgets import JSONEditorWidget
 
 from django.db import models
-from cephalon.models import APIKey, Project, ProjectFile, Pyre, WebsocketNode, Topic, APIKeyRemote
+from cephalon.models import APIKey, Project, ProjectFile, Pyre, WebsocketNode, Topic, APIKeyRemote, AnalysisGroup
 
 
 # Register your models here.
@@ -70,3 +70,8 @@ class APIKeyRemote(admin.ModelAdmin):
     list_display = ("hostname", "protocol", "port")
     readonly_fields = ("key",)
     fields = ("key", "hostname", "protocol", "port")
+
+@admin.register(AnalysisGroup)
+class AnalysisGroupAdmin(admin.ModelAdmin):
+    list_display = ("searched_file", "differential_analysis_file", "sample_annotation_file")
+    fields = ("searched_file", "differential_analysis_file", "sample_annotation_file", "comparison_matrix_file", "unprocessed_file", "other_files")

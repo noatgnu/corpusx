@@ -51,7 +51,6 @@ class Command(BaseCommand):
                                         "clientID": message["clientID"],
                                         "pyreName": message["pyreName"]
                                     })
-                                print(res.content)
 
                             current.search_enqueue.delay(
                                 current,
@@ -86,7 +85,8 @@ class Command(BaseCommand):
                             #     }))
                     elif channel_type=="file_request":
                         if message["targetID"] == options["server_id"]:
-                            if self.api_key.allow_download:
+                            print(self.api_key.allow_download)
+                            if self.api_key.allow_download == True:
                                 old_file = await ProjectFile.objects.aget(id=message["data"]["id"])
                                 #remote = RemoteCorpusX(f"{self.protocol}://{self.hostname}:{self.port}", self.decoded_api_key)
                                 file = current.upload_project_file.delay(current, old_file, message["sessionID"], message["clientID"], message["pyreName"], options["server_id"])

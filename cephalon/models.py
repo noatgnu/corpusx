@@ -588,6 +588,19 @@ class SearchResult(models.Model):
             })
             return result.json()
 
+class AnalysisGroup(models.Model):
+    """
+    A model to store ProjectFile objects that are related to each other
+    """
+    searched_file = models.ForeignKey(ProjectFile, on_delete=models.CASCADE, blank=True, null=True, related_name="searched_related_files")
+    differential_analysis_file = models.ForeignKey(ProjectFile, on_delete=models.CASCADE, related_name="differential_analysis_related_files", blank=True, null=True)
+    sample_annotation_file = models.ForeignKey(ProjectFile, on_delete=models.CASCADE, related_name="sample_annotation_related_files", blank=True, null=True)
+    comparison_matrix_file = models.ForeignKey(ProjectFile, on_delete=models.CASCADE, related_name="comparison_matrix_related_files", blank=True, null=True)
+    unprocessed_file = models.ForeignKey(ProjectFile, on_delete=models.CASCADE, related_name="unprocessed_related_files", blank=True, null=True)
+    other_files = models.ManyToManyField(ProjectFile, related_name="other_related_files", blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_auth_token(sender, instance=None, created=False, **kwargs):

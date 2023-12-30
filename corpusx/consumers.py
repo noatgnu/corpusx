@@ -476,8 +476,6 @@ class CurrentCorpusX:
                     xg["analysis"] = data["analysis"][i]
                 exported_data.append(xg)
 
-            print(exported_data)
-
             exported_project = [{"id": i["id"], "data": i} for i in data["project"]]
             json_data = json.dumps({"files": exported_data, "projects": exported_project})
         else:
@@ -577,6 +575,7 @@ class CurrentCorpusX:
             if i.id not in found_terms_dict:
                 found_terms_dict[i.id] = []
             terms = i.get_search_items_from_headline()
+            print(terms)
             if term:
                 for t in terms:
                     if t not in found_terms_dict[i.id]:
@@ -598,8 +597,6 @@ class CurrentCorpusX:
                             if t in line:
                                 if rid not in found_terms_dict[i.id]:
                                     line = line.strip()
-                                    if i.file_type == "csv":
-                                        line = line.split(",")
                                     found_lines_dict[i.id].append(rid)
                                     if rid not in found_line_term_map[i.id]:
                                         found_line_term_map[i.id][rid] = []

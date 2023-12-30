@@ -621,7 +621,7 @@ class CurrentCorpusX:
                                         analysis_dict[i.id]["searched_file"] = analysis_dict[a.searched_file.id]["searched_file"]
                                         analysis_dict[i.id]["sample_annotation"] = analysis_dict[a.searched_file.id]["sample_annotation"]
                             elif a.searched_file == i:
-                                for l in a.get_searched_file_line(found_lines_dict[i.id]):
+                                for l in a.get_searched_line(found_lines_dict[i.id]):
                                     analysis_dict[i.id]["searched_file"][l[0]] = l[1]
                                 if a.sample_annotation_file:
                                     analysis_dict[i.id]["sample_annotation"] = a.get_sample_annotations()

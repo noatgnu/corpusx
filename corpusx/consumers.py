@@ -15,9 +15,10 @@ from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer, AsyncJsonWebsocketConsumer
 from django.contrib.postgres.search import SearchQuery, SearchHeadline, SearchVector
 
-from cephalon.models import ProjectFile, Project, WebsocketSession, Pyre, WebsocketNode, APIKey, SearchResult
+from cephalon.models import ProjectFile, Project, WebsocketSession, Pyre, WebsocketNode, APIKey, SearchResult, \
+    AnalysisGroup
 from cephalon.schemas import FileSchema, SearchResultSchema, ProjectSchema
-
+from django.db.models import Q
 
 class RemoteFileConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -453,7 +454,6 @@ class CurrentCorpusX:
     def search_enqueue(self, query: dict, pyre_name: str = "", session_id: str = "", node_id: str = "", client_id: str = "", server_id: str = ""):
         data = async_to_sync(self.search)(query["term"], pyre_name, query["description"], session_id)
         project_found = len(data["project"])
-        print(project_found)
         pyre = Pyre.objects.get(name=pyre_name)
         session = None
         if session_id:
@@ -470,7 +470,7 @@ class CurrentCorpusX:
                     grouped_data[i["id"]] = []
                 grouped_data[i["id"]].append(i)
 
-            exported_data = [{"id": i, "data": grouped_data[i], "found_lines": data["found_lines"][i], "found_terms": data["found_terms"][i]} for i in grouped_data]
+            exported_data = [{"id": i, "data": grouped_data[i], "found_lines": data["found_lines"][i], "found_terms": data["found_terms"][i], "found_line_term_map": data["found_line_term_map"][i], "analysis": data["analysis"][i]} for i in grouped_data]
             print(exported_data)
 
             exported_project = [{"id": i["id"], "data": i} for i in data["project"]]
@@ -555,6 +555,8 @@ class CurrentCorpusX:
             files = ProjectFile.objects.all()
 
         files = files.filter(content__search_vector=query).annotate(headline=SearchHeadline('content__data', query, start_sel="<b>", stop_sel="</b>")).distinct()
+        analysis = AnalysisGroup.objects.filter(Q(searched_file__in=files)|Q(differential_analysis_file__in=files))
+
         if description != '':
             files = files.filter(description__icontains=description)
         if self.perspective == "host":
@@ -578,18 +580,59 @@ class CurrentCorpusX:
                 result["project"].append(i.project)
             result["file"].append(FileSchema.from_orm(i).dict())
         found_lines_dict = {}
+        analysis_dict = {}
+        found_line_term_map = {}
         for i in files:
             if i.id not in found_lines_dict:
                 found_lines_dict[i.id] = []
+                found_line_term_map[i.id] = {}
                 with i.file.open("rt") as f:
+                    analys = analysis.filter(Q(searched_file=i)|Q(differential_analysis_file=i))
                     for rid, line in enumerate(f):
                         for t in found_terms_dict[i.id]:
                             if t in line:
                                 if rid not in found_terms_dict[i.id]:
+                                    line = line.strip()
+                                    if i.file_type == "csv":
+                                        line = line.split(",")
                                     found_lines_dict[i.id].append(rid)
+                                    if rid not in found_line_term_map[i.id]:
+                                        found_line_term_map[i.id][rid] = []
+                                    found_line_term_map[i.id][rid].append(t)
+
+                    if analys:
+                        analysis_dict[i.id] = {"differential_analysis": {}, "searched_file": {}, "comparison_matrix": [], "sample_annotation": {}}
+                        for a in analys:
+                            if a.differential_analysis_file == i:
+                                for l in a.get_differential_analysis_line(found_lines_dict[i.id]):
+                                    analysis_dict[i.id]["differential_analysis"][l[0]] = l[1]
+                                if a.comparison_matrix_file:
+                                    for l in a.get_comparison_matrix():
+                                        analysis_dict[i.id]["comparison_matrix"].append(l)
+                                if a.searched_file:
+                                    if a.searched_file.id in analysis_dict:
+                                        analysis_dict[a.searched_file.id]["differential_analysis"] = analysis_dict[i.id]["differential_analysis"]
+                                        analysis_dict[a.searched_file.id]["comparison_matrix"] = analysis_dict[i.id]["comparison_matrix"]
+                                    analysis_dict[i.id]["searched_file"] = analysis_dict[a.searched_file.id]["searched_file"]
+                                    analysis_dict[i.id]["sample_annotation"] = analysis_dict[a.searched_file.id]["sample_annotation"]
+                            elif a.searched_file == i:
+                                for l in a.get_searched_file_line(found_lines_dict[i.id]):
+                                    analysis_dict[i.id]["searched_file"][l[0]] = l[1]
+                                if a.sample_annotation_file:
+                                    analysis_dict[i.id]["sample_annotation"] = a.get_sample_annotations()
+                                if a.differential_analysis_file:
+                                    if a.differential_analysis_file.id in analysis_dict:
+                                        analysis_dict[a.differential_analysis_file.id]["searched_file"] = analysis_dict[i.id]["searched_file"]
+                                        analysis_dict[a.differential_analysis_file.id]["sample_annotation"] = analysis_dict[i.id]["sample_annotation"]
+                                    analysis_dict[i.id]["differential_analysis"] = analysis_dict[a.differential_analysis_file.id]["differential_analysis"]
+                                    analysis_dict[i.id]["comparison_matrix"] = analysis_dict[a.differential_analysis_file.id]["comparison_matrix"]
+
+
         result["project"] = [ProjectSchema.from_orm(p).dict() for p in result["project"]]
         result["found_terms"] = found_terms_dict
         result["found_lines"] = found_lines_dict
+        result["found_line_term_map"] = found_line_term_map
+        result["analysis"] = analysis_dict
         return result
 
     @database_sync_to_async

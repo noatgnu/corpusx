@@ -469,8 +469,13 @@ class CurrentCorpusX:
                 if i["id"] not in grouped_data:
                     grouped_data[i["id"]] = []
                 grouped_data[i["id"]].append(i)
+            exported_data = []
+            for i in grouped_data:
+                xg = {"id": i, "data": grouped_data[i], "found_lines": data["found_lines"][i], "found_terms": data["found_terms"][i], "found_line_term_map": data["found_line_term_map"][i]}
+                if i in data["analysis"]:
+                    xg["analysis"] = data["analysis"][i]
+                exported_data.append(xg)
 
-            exported_data = [{"id": i, "data": grouped_data[i], "found_lines": data["found_lines"][i], "found_terms": data["found_terms"][i], "found_line_term_map": data["found_line_term_map"][i], "analysis": data["analysis"][i]} for i in grouped_data]
             print(exported_data)
 
             exported_project = [{"id": i["id"], "data": i} for i in data["project"]]

@@ -15,6 +15,7 @@ from django.contrib.postgres.indexes import GinIndex
 from cephalon.utils import create_signed_token, decode_signed_token, create_api_key, verify_api_key
 from django.conf import settings
 import hashlib
+import re
 
 # Create your models here.
 class Project(models.Model):
@@ -191,6 +192,13 @@ class ProjectFile(models.Model):
                 result = await client.post(f"{host}/api/files/chunked/{upload_id}/complete", json={"create_file": True})
                 return result.json()
 
+    def get_search_items_from_headline(self):
+        if getattr(self, "headline", None):
+            pattern = '<b>(.*?)</b>'
+            return re.findall(pattern, self.headline)
+        else:
+            return None
+
 
 class ProjectFileContent(models.Model):
     """
@@ -214,6 +222,8 @@ class ProjectFileContent(models.Model):
 
     def __repr__(self):
         return f"Content of {self.project_file.name} {self.created_at}"
+
+
 
 
 class Token(models.Model):

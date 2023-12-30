@@ -1,5 +1,6 @@
 import io
 import json
+import re
 from datetime import datetime
 from io import BytesIO
 
@@ -468,7 +469,8 @@ class CurrentCorpusX:
                 if i["id"] not in grouped_data:
                     grouped_data[i["id"]] = []
                 grouped_data[i["id"]].append(i)
-            exported_data = [{"id": i, "data": grouped_data[i]} for i in grouped_data]
+
+            exported_data = [{"id": i, "data": grouped_data[i], "found_lines": data["found_lines"], "found_terms": data["found_terms"]} for i in grouped_data]
 
             exported_project = [{"id": i["id"], "data": i} for i in data["project"]]
             json_data = json.dumps({"files": exported_data, "projects": exported_project})
@@ -486,7 +488,6 @@ class CurrentCorpusX:
                         "clientID": client_id,
                         "pyreName": pyre_name,
                     })
-                    print(res.content)
 
         result = {}
         if project_found == 0:
@@ -561,11 +562,33 @@ class CurrentCorpusX:
                 ws.files.set(files)
                 ws.save()
         result = {"file": [], "project": []}
+
+        found_terms_dict = {}
+
         for i in files:
+            if i.id not in found_terms_dict:
+                found_terms_dict[i.id] = []
+            terms = i.get_search_items_from_headline()
+            if term:
+                for t in terms:
+                    if t not in found_terms_dict[i.id]:
+                        found_terms_dict[i.id].append(t)
             if i.project not in result["project"]:
                 result["project"].append(i.project)
             result["file"].append(FileSchema.from_orm(i).dict())
+        found_lines_dict = {}
+        for i in files:
+            if i.id not in found_lines_dict:
+                found_lines_dict[i.id] = []
+                with i.file.open("rt") as f:
+                    for rid, line in enumerate(f):
+                        for t in found_terms_dict[i.id]:
+                            if t in line:
+                                if rid not in found_terms_dict[i.id]:
+                                    found_lines_dict[i.id].append(rid)
         result["project"] = [ProjectSchema.from_orm(p).dict() for p in result["project"]]
+        result["found_terms"] = found_terms_dict
+        result["found_lines"] = found_lines_dict
         return result
 
     @database_sync_to_async

@@ -470,7 +470,7 @@ class CurrentCorpusX:
                     grouped_data[i["id"]] = []
                 grouped_data[i["id"]].append(i)
 
-            exported_data = [{"id": i, "data": grouped_data[i], "found_lines": data["found_lines"], "found_terms": data["found_terms"]} for i in grouped_data]
+            exported_data = [{"id": i, "data": grouped_data[i], "found_lines": data["found_lines"], "found_terms": data["found_terms"][i]} for i in grouped_data]
 
             exported_project = [{"id": i["id"], "data": i} for i in data["project"]]
             json_data = json.dumps({"files": exported_data, "projects": exported_project})

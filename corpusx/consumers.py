@@ -613,8 +613,8 @@ class CurrentCorpusX:
                                     if a.searched_file.id in analysis_dict:
                                         analysis_dict[a.searched_file.id]["differential_analysis"] = analysis_dict[i.id]["differential_analysis"]
                                         analysis_dict[a.searched_file.id]["comparison_matrix"] = analysis_dict[i.id]["comparison_matrix"]
-                                    analysis_dict[i.id]["searched_file"] = analysis_dict[a.searched_file.id]["searched_file"]
-                                    analysis_dict[i.id]["sample_annotation"] = analysis_dict[a.searched_file.id]["sample_annotation"]
+                                        analysis_dict[i.id]["searched_file"] = analysis_dict[a.searched_file.id]["searched_file"]
+                                        analysis_dict[i.id]["sample_annotation"] = analysis_dict[a.searched_file.id]["sample_annotation"]
                             elif a.searched_file == i:
                                 for l in a.get_searched_file_line(found_lines_dict[i.id]):
                                     analysis_dict[i.id]["searched_file"][l[0]] = l[1]
@@ -624,8 +624,8 @@ class CurrentCorpusX:
                                     if a.differential_analysis_file.id in analysis_dict:
                                         analysis_dict[a.differential_analysis_file.id]["searched_file"] = analysis_dict[i.id]["searched_file"]
                                         analysis_dict[a.differential_analysis_file.id]["sample_annotation"] = analysis_dict[i.id]["sample_annotation"]
-                                    analysis_dict[i.id]["differential_analysis"] = analysis_dict[a.differential_analysis_file.id]["differential_analysis"]
-                                    analysis_dict[i.id]["comparison_matrix"] = analysis_dict[a.differential_analysis_file.id]["comparison_matrix"]
+                                        analysis_dict[i.id]["differential_analysis"] = analysis_dict[a.differential_analysis_file.id]["differential_analysis"]
+                                        analysis_dict[i.id]["comparison_matrix"] = analysis_dict[a.differential_analysis_file.id]["comparison_matrix"]
 
 
         result["project"] = [ProjectSchema.from_orm(p).dict() for p in result["project"]]

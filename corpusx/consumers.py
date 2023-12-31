@@ -575,14 +575,14 @@ class CurrentCorpusX:
             if i.id not in found_terms_dict:
                 found_terms_dict[i.id] = []
             terms = i.get_search_items_from_headline()
-            print(terms)
-            if term:
+            if terms:
                 for t in terms:
                     if t not in found_terms_dict[i.id]:
                         found_terms_dict[i.id].append(t)
             if i.project not in result["project"]:
                 result["project"].append(i.project)
             result["file"].append(FileSchema.from_orm(i).dict())
+        print(found_terms_dict)
         found_lines_dict = {}
         analysis_dict = {}
         found_line_term_map = {}

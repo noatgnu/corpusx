@@ -593,10 +593,11 @@ class CurrentCorpusX:
                 with i.file.open("rt") as f:
                     analys = analysis.filter(Q(searched_file=i)|Q(differential_analysis_file=i))
                     for rid, line in enumerate(f):
+                        print(line)
                         for t in found_terms_dict[i.id]:
                             if t in line:
                                 if rid not in found_terms_dict[i.id]:
-                                    line = line.strip()
+                                    line = line.rstrip()
                                     found_lines_dict[i.id].append(rid)
                                     if rid not in found_line_term_map[i.id]:
                                         found_line_term_map[i.id][rid] = []

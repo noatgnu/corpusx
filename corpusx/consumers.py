@@ -599,6 +599,7 @@ class CurrentCorpusX:
                             for t in found_terms_dict[i.id]:
                                 print(t)
                                 print(t in line)
+                                print(line.index(t))
                                 if t in line:
                                     print(rid)
                                     if rid not in found_terms_dict[i.id]:

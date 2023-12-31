@@ -595,14 +595,9 @@ class CurrentCorpusX:
                     for rid, line in enumerate(f):
                         line = line.rstrip()
                         if line:
-                            print(line)
                             for t in found_terms_dict[i.id]:
-                                print(t)
-                                print(t in line)
-                                if t in line:
-                                    print(rid)
+                                if re.search(r"\b{0}\b".format(t), line):
                                     if rid not in found_terms_dict[i.id]:
-
                                         found_lines_dict[i.id].append(rid)
                                     if rid not in found_line_term_map[i.id]:
                                         found_line_term_map[i.id][rid] = []

@@ -593,17 +593,19 @@ class CurrentCorpusX:
                 with i.file.open("rt") as f:
                     analys = analysis.filter(Q(searched_file=i)|Q(differential_analysis_file=i))
                     for rid, line in enumerate(f):
-                        print(line)
-                        for t in found_terms_dict[i.id]:
-                            print(t)
-                            if t in line:
-                                print(rid)
-                                if rid not in found_terms_dict[i.id]:
-                                    line = line.rstrip()
-                                    found_lines_dict[i.id].append(rid)
-                                if rid not in found_line_term_map[i.id]:
-                                    found_line_term_map[i.id][rid] = []
-                                found_line_term_map[i.id][rid].append(t)
+                        line = line.rstrip()
+                        if line:
+                            print(line)
+                            for t in found_terms_dict[i.id]:
+                                print(t)
+                                if t in line:
+                                    print(rid)
+                                    if rid not in found_terms_dict[i.id]:
+
+                                        found_lines_dict[i.id].append(rid)
+                                    if rid not in found_line_term_map[i.id]:
+                                        found_line_term_map[i.id][rid] = []
+                                    found_line_term_map[i.id][rid].append(t)
 
                     if analys:
                         analysis_dict[i.id] = {"differential_analysis": {}, "searched_file": {}, "comparison_matrix": [], "sample_annotation": {}}

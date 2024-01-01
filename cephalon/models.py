@@ -625,10 +625,11 @@ class AnalysisGroup(models.Model):
             delimiter = self.differential_analysis_file.get_delimiter()
             headers = line.rstrip().split(delimiter)
             for i, line in enumerate(f):
-                if i+1 in line_numbers:
-                    line = line.rstrip()
-                    data = line.split(delimiter)
-                    yield i+1, dict(zip(headers, data))
+                if i > 0:
+                    if i+1 in line_numbers:
+                        line = line.rstrip()
+                        data = line.split(delimiter)
+                        yield i+1, dict(zip(headers, data))
 
     def get_searched_line(self, line_numbers: list[int]):
         with self.searched_file.file.open("rt") as f:
@@ -636,20 +637,22 @@ class AnalysisGroup(models.Model):
             delimiter = self.searched_file.get_delimiter()
             headers = line.rstrip().split(delimiter)
             for i, line in enumerate(f):
-                if i+1 in line_numbers:
-                    line = line.rstrip()
-                    data = line.split(delimiter)
-                    yield i+1, dict(zip(headers, data))
+                if i > 0:
+                    if i+1 in line_numbers:
+                        line = line.rstrip()
+                        data = line.split(delimiter)
+                        yield i+1, dict(zip(headers, data))
 
     def get_comparison_matrix(self):
         with self.comparison_matrix_file.file.open("rt") as f:
             line = f.readline()
             delimiter = self.searched_file.get_delimiter()
             headers = line.rstrip().split(delimiter)
-            for line in f:
-                line = line.rstrip()
-                data = line.split(delimiter)
-                yield dict(zip(headers, data))
+            for i, line in enumerate(f):
+                if i > 0:
+                    line = line.rstrip()
+                    data = line.split(delimiter)
+                    yield dict(zip(headers, data))
 
     def get_sample_annotations(self):
         with self.sample_annotation_file.file.open("rt") as f:
@@ -657,10 +660,12 @@ class AnalysisGroup(models.Model):
             delimiter = self.searched_file.get_delimiter()
             headers = line.rstrip().split(delimiter)
             annotations = {}
-            for line in f:
-                line = line.rstrip()
-                data = line.split(delimiter)
-                annotations[data[0]] = data[1]
+            for i, line in enumerate(f):
+                if i > 0:
+                    line = line.rstrip()
+                    data = line.split(delimiter)
+                    annotations[data[0]] = data[1]
+            return annotations
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_auth_token(sender, instance=None, created=False, **kwargs):

@@ -470,8 +470,10 @@ class CurrentCorpusX:
                     grouped_data[i["id"]] = []
                 grouped_data[i["id"]].append(i)
             exported_data = []
+            print(data["analysis"])
             for i in grouped_data:
                 xg = {"id": i, "data": grouped_data[i], "found_lines": data["found_lines"][i], "found_terms": data["found_terms"][i], "found_line_term_map": data["found_line_term_map"][i]}
+                print(i)
                 if i in data["analysis"]:
                     xg["analysis"] = data["analysis"][i]
                 exported_data.append(xg)
@@ -584,15 +586,16 @@ class CurrentCorpusX:
             result["file"].append(FileSchema.from_orm(i).dict())
         print(found_terms_dict)
         found_lines_dict = {}
-        analysis_dict = {}
+        analysis_file_map = {}
         found_line_term_map = {}
         for i in files:
             if i.id not in found_lines_dict:
                 found_lines_dict[i.id] = []
                 found_line_term_map[i.id] = {}
+                analys = analysis.filter(Q(searched_file=i) | Q(differential_analysis_file=i))
                 with i.file.open("rt") as f:
-                    analys = analysis.filter(Q(searched_file=i)|Q(differential_analysis_file=i))
-                    for rid, line in enumerate(f):
+
+                    for rid, line in enumerate(f, 1):
                         line = line.rstrip()
                         if line:
                             for t in found_terms_dict[i.id]:
@@ -604,20 +607,25 @@ class CurrentCorpusX:
                                     found_line_term_map[i.id][rid].append(t)
 
                     if analys:
-                        analysis_dict[i.id] = {"differential_analysis": {}, "searched_file": {}, "comparison_matrix": [], "sample_annotation": {}}
+                        if i.id not in analysis_file_map:
+                            analysis_file_map[i.id] = {}
+                        analysis_dict = {}
+
                         for a in analys:
+                            analysis_dict[a.id] = {"differential_analysis": {}, "searched_file": {},
+                                                   "comparison_matrix": [], "sample_annotation": {}}
                             if a.differential_analysis_file == i:
                                 for l in a.get_differential_analysis_line(found_lines_dict[i.id]):
-                                    analysis_dict[i.id]["differential_analysis"][l[0]] = l[1]
+                                    analysis_dict[a.id]["differential_analysis"][l[0]] = l[1]
                                 if a.comparison_matrix_file:
                                     for l in a.get_comparison_matrix():
-                                        analysis_dict[i.id]["comparison_matrix"].append(l)
+                                        analysis_dict[a.id]["comparison_matrix"].append(l)
                                 if a.searched_file:
-                                    if a.searched_file.id in analysis_dict:
-                                        analysis_dict[a.searched_file.id]["differential_analysis"] = analysis_dict[i.id]["differential_analysis"]
-                                        analysis_dict[a.searched_file.id]["comparison_matrix"] = analysis_dict[i.id]["comparison_matrix"]
-                                        analysis_dict[i.id]["searched_file"] = analysis_dict[a.searched_file.id]["searched_file"]
-                                        analysis_dict[i.id]["sample_annotation"] = analysis_dict[a.searched_file.id]["sample_annotation"]
+                                    if a.searched_file.id in analysis_file_map:
+                                        analysis_file_map[a.searched_file.id][a.id]["differential_analysis"] = analysis_dict[a.id]["differential_analysis"]
+                                        analysis_file_map[a.searched_file.id][a.id]["comparison_matrix"] = analysis_dict[i.id]["comparison_matrix"]
+                                        analysis_dict[a.id]["searched_file"] = analysis_file_map[a.searched_file.id][a.id]["searched_file"]
+                                        analysis_dict[a.id]["sample_annotation"] = analysis_file_map[a.searched_file.id][a.id]["sample_annotation"]
                             elif a.searched_file == i:
                                 for l in a.get_searched_line(found_lines_dict[i.id]):
                                     analysis_dict[i.id]["searched_file"][l[0]] = l[1]
@@ -625,17 +633,18 @@ class CurrentCorpusX:
                                     analysis_dict[i.id]["sample_annotation"] = a.get_sample_annotations()
                                 if a.differential_analysis_file:
                                     if a.differential_analysis_file.id in analysis_dict:
-                                        analysis_dict[a.differential_analysis_file.id]["searched_file"] = analysis_dict[i.id]["searched_file"]
-                                        analysis_dict[a.differential_analysis_file.id]["sample_annotation"] = analysis_dict[i.id]["sample_annotation"]
-                                        analysis_dict[i.id]["differential_analysis"] = analysis_dict[a.differential_analysis_file.id]["differential_analysis"]
-                                        analysis_dict[i.id]["comparison_matrix"] = analysis_dict[a.differential_analysis_file.id]["comparison_matrix"]
-
+                                        analysis_file_map[a.differential_analysis_file.id][a.id]["searched_file"] = analysis_dict[i.id]["searched_file"]
+                                        analysis_file_map[a.differential_analysis_file.id][a.id]["sample_annotation"] = analysis_dict[i.id]["sample_annotation"]
+                                        analysis_dict[i.id]["differential_analysis"] = analysis_file_map[a.differential_analysis_file.id][a.id]["differential_analysis"]
+                                        analysis_dict[i.id]["comparison_matrix"] = analysis_file_map[a.differential_analysis_file.id][a.id]["comparison_matrix"]
+                        analysis_file_map[i.id] = analysis_dict
+                        print(analysis_dict)
 
         result["project"] = [ProjectSchema.from_orm(p).dict() for p in result["project"]]
         result["found_terms"] = found_terms_dict
         result["found_lines"] = found_lines_dict
         result["found_line_term_map"] = found_line_term_map
-        result["analysis"] = analysis_dict
+        result["analysis"] = analysis_file_map
         return result
 
     @database_sync_to_async

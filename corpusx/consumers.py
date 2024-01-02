@@ -550,7 +550,7 @@ class CurrentCorpusX:
 
     @database_sync_to_async
     def search(self, term: str, pyre_name: str = "", description: str = "", session_id: str = ""):
-        query = SearchQuery(term, search_type="websearch")
+        query = SearchQuery(term, search_type="raw")
         if self.api_key:
             files = self.api_key.get_all_files().all()
         elif pyre_name != "":
@@ -559,7 +559,7 @@ class CurrentCorpusX:
         else:
             files = ProjectFile.objects.all()
 
-        files = files.filter(content__search_vector=query).annotate(headline=SearchHeadline('content__data', query, start_sel="<b>", stop_sel="</b>")).distinct()
+        files = files.filter(content__search_vector=query).annotate(headline=SearchHeadline('content__data', query, start_sel="<b>", stop_sel="</b>", highlight_all=True)).distinct()
         analysis = AnalysisGroup.objects.filter(Q(searched_file__in=files)|Q(differential_analysis_file__in=files))
 
         if description != '':
@@ -576,15 +576,15 @@ class CurrentCorpusX:
         for i in files:
             if i.id not in found_terms_dict:
                 found_terms_dict[i.id] = []
-            terms = i.get_search_items_from_headline()
-            if terms:
-                for t in terms:
+            term_contexts = i.get_search_items_from_headline()
+            if term_contexts:
+                for t in term_contexts:
                     if t not in found_terms_dict[i.id]:
                         found_terms_dict[i.id].append(t)
-            if i.project not in result["project"]:
-                result["project"].append(i.project)
-            result["file"].append(FileSchema.from_orm(i).dict())
-        print(found_terms_dict)
+                i.headline = json.dumps(term_contexts)
+                if i.project not in result["project"]:
+                    result["project"].append(i.project)
+                result["file"].append(FileSchema.from_orm(i).dict())
         found_lines_dict = {}
         analysis_file_map = {}
         found_line_term_map = {}
@@ -599,7 +599,7 @@ class CurrentCorpusX:
                         line = line.rstrip()
                         if line:
                             for t in found_terms_dict[i.id]:
-                                if re.search(r"(?<!\S){0}(?!\S)".format(t), line):
+                                if re.search(r"(?<!\S)(?<!;|\w){0}(?!\w)(?!\S)".format(t), line):
                                     if rid not in found_terms_dict[i.id]:
                                         found_lines_dict[i.id].append(rid)
                                     if rid not in found_line_term_map[i.id]:
@@ -638,7 +638,6 @@ class CurrentCorpusX:
                                         analysis_dict[i.id]["differential_analysis"] = analysis_file_map[a.differential_analysis_file.id][a.id]["differential_analysis"]
                                         analysis_dict[i.id]["comparison_matrix"] = analysis_file_map[a.differential_analysis_file.id][a.id]["comparison_matrix"]
                         analysis_file_map[i.id] = analysis_dict
-                        print(analysis_dict)
 
         result["project"] = [ProjectSchema.from_orm(p).dict() for p in result["project"]]
         result["found_terms"] = found_terms_dict

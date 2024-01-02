@@ -195,7 +195,25 @@ class ProjectFile(models.Model):
     def get_search_items_from_headline(self):
         if getattr(self, "headline", None):
             pattern = '<b>(.*?)</b>'
-            return re.findall(pattern, self.headline)
+            term_contexts = {}
+            for match in re.finditer(pattern, self.headline):
+                if match:
+                    m = match.group(1)
+                    if m not in term_contexts:
+                        term_contexts[m] = []
+                    start = match.start(0)
+                    end = match.end(0)
+                    # get a window of 10 words before and after the match
+                    window = 10
+                    start_window = start - window
+                    end_window = end + window
+                    if start_window < 0:
+                        start_window = 0
+                    if end_window > len(self.headline):
+                        end_window = len(self.headline)
+                    term_contexts[m].append(self.headline[start_window:end_window])
+
+            return term_contexts
         else:
             return None
 

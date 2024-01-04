@@ -34,6 +34,10 @@ if os.environ.get("DEBUG", "True") == "False":
 # Application definition
 
 INSTALLED_APPS = [
+    'admin_tools',
+    'admin_tools.theming',
+    'admin_tools.menu',
+    'admin_tools.dashboard',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -71,8 +75,13 @@ TEMPLATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [BASE_DIR / 'templates']
         ,
-        'APP_DIRS': True,
+        'APP_DIRS': False,
         'OPTIONS': {
+            'loaders': [
+                'admin_tools.template_loaders.Loader',
+                'django.template.loaders.app_directories.Loader',
+
+            ],
             'context_processors': [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
@@ -138,7 +147,9 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
-
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder'
+]
 STATIC_URL = 'static/'
 STORAGES = {
     # static files
@@ -263,3 +274,7 @@ SCHEDULER_CONFIG = {
 }
 
 ADMIN_CONTACT_EMAIL = os.environ.get("ADMIN_CONTACT_EMAIL", "test@cinder.proteo.info")
+
+# Admin tools
+ADMIN_TOOLS_THEMING_CSS = 'admin/css/admin_color.css'
+ADMIN_TOOLS_INDEX_DASHBOARD = 'corpusx.customdashboard.CustomIndexDashboard'

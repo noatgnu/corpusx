@@ -27,6 +27,7 @@ django-json-widget = {git = "https://github.com/jmrivas86/django-json-widget.git
 django-dbbackup = "^4.0.2"
 django-rq = "^2.10.1"
 django-tasks-scheduler = "^1.2.4"
+django-admin-tools = "^0.9.3"
 
 
 [build-system]

@@ -283,6 +283,17 @@ argon2 = ["argon2-cffi (>=19.1.0)"]
 bcrypt = ["bcrypt"]
 
 [[package]]
+name = "django-admin-tools"
+version = "0.9.3"
+description = "A collection of tools for the django administration interface"
+optional = false
+python-versions = "*"
+files = [
+    {file = "django-admin-tools-0.9.3.tar.gz", hash = "sha256:5aee0735907f0807c88b793f6b14eccff586e652d41e77f02c691f624f965672"},
+    {file = "django_admin_tools-0.9.3-py2.py3-none-any.whl", hash = "sha256:f4bef88a5c5f4b97a760c09b822fc6f0e9f12c91a755860b1c011d01345282d3"},
+]
+
+[[package]]
 name = "django-cors-headers"
 version = "4.3.1"
 description = "django-cors-headers is a Django application for handling the server headers required for Cross-Origin Resource Sharing (CORS)."
@@ -1038,4 +1049,4 @@ brotli = ["Brotli"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "d688a2298cb25b27cd31dc9472adf42ba83ef905b6ad24403fd5df91bf3d6246"
+content-hash = "13db17abd12e3d025c493ecde4429746631e4d4d7305344713fe04740c939c07"

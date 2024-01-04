@@ -194,7 +194,7 @@ class ProjectFile(models.Model):
 
     def get_search_items_from_headline(self):
         if getattr(self, "headline", None):
-            pattern = '<b>(.*?)</b>'
+            pattern = '<b>(?<!\S)(?<!-|\w)(;)(.*?)(?!\w)(?!\S)</b>'
             term_contexts = {}
             for match in re.finditer(pattern, self.headline):
                 if match:
@@ -204,7 +204,7 @@ class ProjectFile(models.Model):
                     start = match.start(0)
                     end = match.end(0)
                     # get a window of 10 words before and after the match
-                    window = 10
+                    window = 20
                     start_window = start - window
                     end_window = end + window
                     if start_window < 0:

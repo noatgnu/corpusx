@@ -550,7 +550,7 @@ class CurrentCorpusX:
 
     @database_sync_to_async
     def search(self, term: str, pyre_name: str = "", description: str = "", session_id: str = ""):
-        query = SearchQuery(term)
+        query = SearchQuery(term, search_type="websearch")
         if self.api_key:
             files = self.api_key.get_all_files().all()
         elif pyre_name != "":

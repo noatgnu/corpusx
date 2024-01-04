@@ -194,7 +194,7 @@ class ProjectFile(models.Model):
 
     def get_search_items_from_headline(self):
         if getattr(self, "headline", None):
-            pattern = '(?<!\S)(?<!-|\w)(;)*<b>(.*?)</b>(?!\w)(?!\S)'
+            pattern = '(?<!\S)(?<!-|\w)(;)*<b>(.*?)(?![^<>]*>)(?!\w)(?!\S)'
             term_contexts = {}
             for match in re.finditer(pattern, self.headline):
                 if match:

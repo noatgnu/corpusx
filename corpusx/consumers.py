@@ -599,7 +599,7 @@ class CurrentCorpusX:
                         line = line.rstrip()
                         if line:
                             for t in found_terms_dict[i.id]:
-                                if re.search(r"(?<!\S)(?<!;|\w){0}(?!\w)(?!\S)".format(t), line):
+                                if re.search(r"(?<!\S)(?<!;|\w|-){0}(?!\w)(?!\S)".format(t), line):
                                     if rid not in found_terms_dict[i.id]:
                                         found_lines_dict[i.id].append(rid)
                                     if rid not in found_line_term_map[i.id]:

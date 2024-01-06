@@ -1,5 +1,6 @@
 import io
 import json
+import os
 import re
 from datetime import datetime
 from io import BytesIO
@@ -19,6 +20,9 @@ from cephalon.models import ProjectFile, Project, WebsocketSession, Pyre, Websoc
     AnalysisGroup
 from cephalon.schemas import FileSchema, SearchResultSchema, ProjectSchema
 from django.db.models import Q
+
+from cephalon.utils import search_file
+
 
 class RemoteFileConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -593,19 +597,27 @@ class CurrentCorpusX:
                 found_lines_dict[i.id] = []
                 found_line_term_map[i.id] = {}
                 analys = analysis.filter(Q(searched_file=i) | Q(differential_analysis_file=i))
-                with i.file.open("rt") as f:
+                # if os is windows process using python re, if not process using grep and awk
+                if os.name == "nt":
+                    with i.file.open("rt") as f:
 
-                    for rid, line in enumerate(f, 1):
-                        line = line.rstrip()
-                        if line:
-                            for t in found_terms_dict[i.id]:
-                                if re.search(r"(?<!\S)(?<!-|\w)(;)*{0}(?!\w)(?!\S)".format(t), line):
-                                    if rid not in found_terms_dict[i.id]:
-                                        found_lines_dict[i.id].append(rid)
-                                    if rid not in found_line_term_map[i.id]:
-                                        found_line_term_map[i.id][rid] = []
-                                    found_line_term_map[i.id][rid].append(t)
-
+                        for rid, line in enumerate(f, 1):
+                            line = line.rstrip()
+                            if line:
+                                for t in found_terms_dict[i.id]:
+                                    if re.search(r"(?<!\S)(?<!-|\w)(;)*{0}(?!\w)(?!\S)".format(t), line):
+                                        if rid not in found_terms_dict[i.id]:
+                                            found_lines_dict[i.id].append(rid)
+                                        if rid not in found_line_term_map[i.id]:
+                                            found_line_term_map[i.id][rid] = []
+                                        found_line_term_map[i.id][rid].append(t)
+                else:
+                    for t in search_file(i.file.path, found_terms_dict[i.id]):
+                        if t["row"] not in found_lines_dict[i.id]:
+                            found_lines_dict[i.id].append(t["row"])
+                        if t["row"] not in found_line_term_map[i.id]:
+                            found_line_term_map[i.id][t["row"]] = []
+                        found_line_term_map[i.id][t["row"]].append(t["term"])
                     if analys:
                         if i.id not in analysis_file_map:
                             analysis_file_map[i.id] = {}

@@ -13,6 +13,10 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
+import subprocess
+import shlex
+
+import cephalon
 
 
 class Sha512ApiKeyHasher(BasePasswordHasher):
@@ -151,4 +155,18 @@ def decrypt_AESGCM(ciphertext: bytes, nonce: bytes, key: bytes):
     plaintext = aesgcm.decrypt(nonce, ciphertext, None)
     return plaintext
 
+def search_file(filepath: str, terms: list[str]):
+    """
+    A function that use search.sh script from cephalon to search for terms in a file
+    """
+    cephalon_path = os.path.dirname(cephalon.__file__)
+    search_sh_path = os.path.join(cephalon_path, "search.sh").replace("\\", "/")
+    filepath = filepath.replace('\\', '/')
 
+    result = subprocess.run(['bash', search_sh_path, ','.join(terms), filepath], capture_output=True)
+    data = result.stdout.decode("utf-8")
+    for i in data.split("\n"):
+        if i == "":
+            break
+        row = i.split(":")
+        yield {"term": row[0].strip(), "row": int(row[1].strip())}

@@ -562,9 +562,10 @@ class CurrentCorpusX:
             files = pyre.get_all_files()
         else:
             files = ProjectFile.objects.all()
+        files = files.filter(file_category__in=["searched", "differential_analysis"])
 
         files = files.filter(content__search_vector=query).annotate(headline=SearchHeadline('content__data', query, start_sel="<b>", stop_sel="</b>", highlight_all=True)).distinct()
-        analysis = AnalysisGroup.objects.filter(Q(searched_file__in=files)|Q(differential_analysis_file__in=files))
+        analysis = AnalysisGroup.objects.filter(Q(searched_file__in=files)|Q(differential_analysis_file__in=files)).distinct()
 
         if description != '':
             files = files.filter(description__icontains=description)

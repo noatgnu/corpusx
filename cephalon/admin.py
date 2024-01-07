@@ -94,3 +94,6 @@ class AnalysisGroupAdmin(admin.ModelAdmin):
     autocomplete_fields = ("searched_file", "differential_analysis_file", "sample_annotation_file", "comparison_matrix_file", "unprocessed_file", "other_files")
     list_display = ("searched_file", "differential_analysis_file", "sample_annotation_file")
     fields = ("searched_file", "differential_analysis_file", "sample_annotation_file", "comparison_matrix_file", "unprocessed_file", "other_files")
+
+
+

@@ -119,6 +119,7 @@ class Command(BaseCommand):
                                         })
 
             except websockets.ConnectionClosed:
+                print("Connection closed")
                 continue
     async def connect(self, options):
         await asyncio.gather(self.connect_to_server(options, channel_type="initial"), self.connect_to_server(options, channel_type="search"), self.connect_to_server(options, channel_type="file_request"))

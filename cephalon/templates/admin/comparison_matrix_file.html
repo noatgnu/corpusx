@@ -1,0 +1,97 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls static %}
+
+{% block content %}
+<div id="comparisonMatrixFile">
+    <h2>Generate Comparison Matrix File</h2>
+    <form id="comparisonMatrixFileForm" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div id="rowsContainer">
+        <div class="row">
+            <div class="col">
+                <label for="conditionA_row1">
+                    Condition A
+                </label>
+                <input id="conditionA_row1" type="text" placeholder="Condition A" class="form-control" name="conditionA_row1" required>
+            </div>
+            <div class="col">
+                <label for="conditionB_row1">
+                    Condition B
+                </label>
+                <input id="conditionB_row1" type="text" placeholder="Condition B" class="form-control" name="conditionB_row1" required>
+            </div>
+            <div class="col">
+                <label for="foldChangeColumn_row1">
+                    Fold Change
+                </label>
+                <input id="foldChangeColumn_row1" type="text" placeholder="Fold Change" class="form-control" name="foldChangeColumn_row1" required>
+            </div>
+            <div class="col">
+                <label for="significanceColumn_row1">
+                    Significance
+                </label>
+                <input id="significanceColumn_row1" type="text" placeholder="Significance" class="form-control" name="significanceColumn_row1" required>
+            </div>
+            <div class="col">
+                <label for="comparisonColumn_row1">
+                    Comparison Column
+                </label>
+                <input id="comparisonColumn_row1" type="text" placeholder="Comparison Column" class="form-control" name="comparisonColumn_row1">
+            </div>
+            <div class="col">
+                <label for="comparisonLabel_row1">
+                    Comparison Label
+                </label>
+                <input id="comparisonLabel_row1" type="text" placeholder="Comparison Label" class="form-control" name="comparisonLabel_row1">
+            </div>
+        </div>
+    </div>
+    <button id="addRow" type="button" class="btn btn-primary" onclick="addRow()">Add Row</button>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
+</div>
+<script>
+    /**
+     * @param {HTMLDivElement} rowContainer
+     * @param {number|string} rowNumber
+     * @param {string} columnName
+     * @param {string} columnLabel
+     * @param {boolean} required
+     */
+    function addColumn(rowContainer, rowNumber, columnName, columnLabel, required) {
+        var conditionAColumn = document.createElement("div");
+        conditionAColumn.setAttribute("class", "col");
+        var conditionALabel = document.createElement("label");
+        conditionALabel.setAttribute("for", columnName +"_row" + rowNumber);
+        conditionALabel.innerHTML = columnLabel;
+        var conditionAInput = document.createElement("input");
+        conditionAInput.setAttribute("id", columnName + "_row" + rowNumber);
+        conditionAInput.setAttribute("type", "text");
+        conditionAInput.setAttribute("placeholder", columnLabel);
+        conditionAInput.setAttribute("class", "form-control");
+        conditionAInput.setAttribute("name", columnName + "_row" + rowNumber);
+        if (required) {
+            conditionAInput.setAttribute("required", "");
+        }
+        conditionAColumn.appendChild(conditionALabel);
+        conditionAColumn.appendChild(conditionAInput);
+        rowContainer.appendChild(conditionAColumn);
+    }
+
+    function addRow() {
+        var rowsContainer = document.getElementById("rowsContainer");
+        var rowNumber = rowsContainer.childElementCount + 1;
+        var row = document.createElement("div");
+        row.setAttribute("class", "row");
+        addColumn(row, rowNumber, "conditionA", "Condition A", true);
+        addColumn(row, rowNumber, "conditionB", "Condition B", true);
+        addColumn(row, rowNumber, "foldChangeColumn", "Fold Change", true);
+        addColumn(row, rowNumber, "significanceColumn", "Significance", true);
+        addColumn(row, rowNumber, "comparisonColumn", "Comparison Column", false);
+        addColumn(row, rowNumber, "comparisonLabel", "Comparison Label", false);
+        rowsContainer.appendChild(row);
+    }
+
+</script>
+
+{% endblock %}

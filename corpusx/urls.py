@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
+import cephalon
 from cephalon.views import api
 
 admin.site.site_header = "Cinder Admin"
@@ -28,4 +29,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('scheduler/', include('scheduler.urls')),
     path('admin_tools/', include('admin_tools.urls')),
+
 ]
